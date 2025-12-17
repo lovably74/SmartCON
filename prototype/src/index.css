@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Noto+Sans+KR:wght@400;500;700&family=Roboto+Mono&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 24% 16%;
+    /* Navy #1A2B3C in HSL approximation */
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 24% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 24% 16%;
+
+    --primary: 210 24% 16%;
+    /* #1A2B3C */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 176 56% 55%;
+    /* #4ECDC4 */
+    --secondary-foreground: 210 24% 16%;
+
+    --muted: 0 0% 69%;
+    /* #B0B0B0 */
+    --muted-foreground: 0 0% 100%;
+
+    --accent: 24 100% 50%;
+    /* #FF6B00 */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 4 90% 58%;
+    /* #F44336 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 18% 46%;
+    /* #37474F */
+    --input: 200 18% 46%;
+    --ring: 176 56% 55%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display tracking-tight;
+  }
+}
