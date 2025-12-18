@@ -1,9 +1,11 @@
 # Cursor 빠른 시작 가이드
 
-**문서 버전:** 1.0  
+**문서 버전:** 2.0  
 **작성일:** 2025년 12월 13일  
-**작성자:** 개발 PM (Gemini)  
-**대상 독자:** 초급 개발자
+**최종 수정일:** 2025년 12월 18일  
+**작성자:** 경영기획실 이대영 이사  
+**대상 독자:** 초급 개발자  
+**기반 문서:** `docs/PRD.md` (v2.3), `docs/Prototype-Guide.md` (v3.1), `docs/System-Architecture.md` (v2.0)
 
 ---
 
@@ -59,10 +61,11 @@
 ### 2.3. 확장 프로그램 설치
 
 **필수 확장 프로그램**:
-1. Vue Language Features (Volar) - Vue.js 지원
-2. ESLint - 코드 검사
-3. Prettier - 코드 포맷팅
-4. GitLens - Git 기능 강화
+1. ESLint - 코드 검사
+2. Prettier - 코드 포맷팅
+3. GitLens - Git 기능 강화
+4. Tailwind CSS IntelliSense - Tailwind CSS 자동완성
+5. TypeScript Vue Plugin (Volar) - TypeScript 지원 (선택)
 
 **설치 방법**:
 1. `Ctrl+Shift+X` (확장 프로그램)
@@ -90,8 +93,9 @@
 
 **질문 예시**:
 ```
-"Vue 3 Composition API를 사용하여 사용자 로그인 폼을 만들어주세요.
-Pinia store와 연동하여 로그인 상태를 관리해야 합니다."
+"React 18 + TypeScript를 사용하여 사용자 로그인 폼을 만들어주세요.
+Zustand store와 연동하여 로그인 상태를 관리해야 합니다.
+Shadcn/UI의 Button과 Input 컴포넌트를 사용하고, Tailwind CSS로 스타일링하세요."
 ```
 
 **응답 확인**:
@@ -123,7 +127,9 @@ File > Open Folder > 프로젝트 폴더 선택
 Ctrl+L로 Chat 열기
 프로젝트 컨텍스트 설정:
 "안녕하세요. SmartCON Lite 프로젝트를 개발하고 있습니다.
-프로젝트는 Vue.js 3 + Spring Boot 3 + MSSQL을 사용합니다.
+프로젝트는 React 18 + TypeScript + Vite (프론트엔드)와 
+Spring Boot 3.3.x + Java 17 + MariaDB (백엔드)를 사용합니다.
+UI는 Shadcn/UI + Tailwind CSS를 사용하고, 상태 관리는 Zustand를 사용합니다.
 현재 [작업할 기능]을 구현하려고 합니다."
 ```
 
@@ -181,13 +187,25 @@ Chat에 요청:
 
 ### 5.1. 좋은 프롬프트 예시
 
-**✅ 좋은 예**:
+**✅ 좋은 예 (백엔드)**:
 ```
 "Spring Boot에서 JWT 토큰을 생성하는 서비스를 만들어주세요.
 - 토큰에는 사용자 ID와 역할 정보를 포함해야 합니다.
 - 토큰 만료 시간은 1시간입니다.
 - 예외 처리를 포함해주세요.
 - JWT 라이브러리는 java-jwt를 사용합니다."
+```
+
+**✅ 좋은 예 (프론트엔드)**:
+```
+"React 18 + TypeScript로 인트로 페이지를 만들어주세요.
+- 인트로 페이지는 루트 경로(/)에 배치됩니다.
+- 메인 메시지: '안전관리, 이제는 스마트하게!'
+- 서브 메시지: '본사와 현장관리까지 한 번에 업무 끝! 스마트콘 [SmartCON]'
+- 로그인 버튼 클릭 시 /login으로 이동
+- Shadcn/UI의 Button 컴포넌트 사용
+- Tailwind CSS로 반응형 디자인 적용 (Mobile First)
+- 회사 주색상 #71AA44 사용"
 ```
 
 **❌ 나쁜 예**:
@@ -208,7 +226,10 @@ Chat에 요청:
 **파일 참조**:
 ```
 "이 파일을 참고하여 비슷한 구조로 만들어주세요:
-@src/services/auth.service.ts"
+@prototype/src/stores/userStore.ts"
+또는
+"이 파일을 참고하여 비슷한 구조로 만들어주세요:
+@backend/src/main/java/com/smartcon/service/AuthService.java"
 ```
 
 **코드 선택 후 질문**:
@@ -224,21 +245,36 @@ Chat에 요청:
 
 ### 6.1. 코드 생성
 
-**Chat 사용**:
+**Chat 사용 (프론트엔드)**:
 ```
-"Vue 3 Composition API로 사용자 목록 컴포넌트를 만들어주세요.
-- Vuetify v-data-table 사용
-- 페이지네이션 포함
-- 검색 기능 포함"
+"React 18 + TypeScript로 사용자 목록 컴포넌트를 만들어주세요.
+- Shadcn/UI의 Table 컴포넌트 사용
+- 페이지네이션 포함 (Shadcn/UI Pagination)
+- 검색 기능 포함 (Shadcn/UI Input)
+- Zustand store에서 사용자 데이터 가져오기
+- 반응형 디자인 적용 (Mobile First)"
+```
+
+**Chat 사용 (백엔드)**:
+```
+"Spring Boot 3.3.x로 사용자 목록 조회 API를 만들어주세요.
+- JPA Repository 사용
+- 페이지네이션 지원 (Pageable)
+- 검색 필터링 (이름, 이메일)
+- JWT 인증 필수
+- Multi-tenant 지원 (Tenant ID 필터링)"
 ```
 
 **Composer 사용** (여러 파일 동시 편집):
 ```
 Ctrl+I로 Composer 열기
 "사용자 인증 기능을 구현해주세요:
-1. auth.service.ts - 인증 API 호출
-2. auth.store.ts - Pinia store
-3. LoginView.vue - 로그인 화면"
+1. prototype/src/stores/authStore.ts - Zustand store (인증 상태 관리)
+2. prototype/src/views/IntroView.tsx - 인트로 페이지
+3. prototype/src/views/LoginMethodSelectView.tsx - 로그인 방식 선택
+4. prototype/src/views/HqLoginView.tsx - 본사 관리자 로그인
+5. prototype/src/views/SocialLoginView.tsx - 소셜 로그인
+Shadcn/UI 컴포넌트와 Tailwind CSS를 사용하고, React Router v7로 라우팅하세요."
 ```
 
 ### 6.2. 코드 리뷰
@@ -298,13 +334,24 @@ Chat에 요청:
 3. "Refactor this code" 선택
 ```
 
-**Chat 사용**:
+**Chat 사용 (프론트엔드)**:
 ```
 "이 코드를 리팩토링해주세요:
-@src/services/user.service.ts
+@prototype/src/stores/userStore.ts
 - 함수 분리
 - 중복 코드 제거
-- 네이밍 개선"
+- 네이밍 개선
+- TypeScript 타입 안정성 향상"
+```
+
+**Chat 사용 (백엔드)**:
+```
+"이 코드를 리팩토링해주세요:
+@backend/src/main/java/com/smartcon/service/UserService.java
+- 함수 분리
+- 중복 코드 제거
+- 네이밍 개선
+- 예외 처리 개선"
 ```
 
 ---
@@ -362,11 +409,101 @@ Chat에 요청:
 
 ---
 
-## 9. 추가 자료
+## 9. SmartCON Lite 프로젝트 컨텍스트
+
+### 9.1. 프로젝트 구조
+
+```
+SmartCON/
+├── docs/                          # 문서 폴더
+│   ├── PRD.md                     # 상세 요구사항 정의서 (v2.3)
+│   ├── Prototype-Guide.md         # 프로토타입 개발 가이드 (v3.1)
+│   ├── SmartCON_Lite_UI_Design_Guide.md  # UI 디자인 가이드 (v3.1)
+│   ├── System-Architecture.md     # 시스템 아키텍처 (v2.0)
+│   └── ...
+│
+├── prototype/                     # 프로토타입 (React + Vite)
+│   ├── src/
+│   │   ├── components/            # 공통 컴포넌트
+│   │   ├── views/                 # 페이지 뷰
+│   │   ├── stores/                # Zustand stores
+│   │   └── router/                # React Router 설정
+│   └── ...
+│
+└── backend/                       # 백엔드 (Spring Boot) - 향후 구현
+```
+
+### 9.2. 기술 스택 요약
+
+**프론트엔드 (프로토타입)**:
+- React 18 + TypeScript
+- Vite (빌드 도구)
+- Shadcn/UI + Tailwind CSS
+- Zustand (상태 관리)
+- React Router v7 (라우팅)
+- Lucide React (아이콘)
+
+**백엔드 (향후 구현)**:
+- Spring Boot 3.3.x
+- Java 17 (LTS)
+- MariaDB 10.11
+- Spring Security 6.x + JWT
+- Spring Batch (배치 작업)
+
+### 9.3. 주요 기능 및 인증 플로우
+
+**인증 플로우**:
+1. 인트로 페이지 (`/`) - 서비스 소개
+2. 로그인 방식 선택 (`/login`) - 본사 관리자 vs 소셜 로그인
+3. 본사 관리자 로그인 (`/login/hq`) - 사업자번호 + 비밀번호
+4. 소셜 로그인 (`/login/social`) - Kakao, Naver OAuth2
+5. 역할 선택 (`/role-select`) - 다중 역할 보유 시
+6. 대시보드 - 역할별 대시보드로 이동
+
+**사용자 역할**:
+- **Super Admin**: SaaS 플랫폼 운영 관리
+- **HQ Admin**: 본사 관리자 (현장 개설, 전사 통계)
+- **Site Manager**: 현장 관리자 (작업 지시, 출역 마감)
+- **Team Leader**: 노무 팀장 (작업 수락, 일보 제출)
+- **Worker**: 노무자 (출역 조회, 전자계약)
+
+### 9.4. 참고 문서
+
+프로젝트 개발 시 다음 문서를 참고하세요:
+
+- **PRD.md** (v2.3): 상세 요구사항 및 기능 명세
+- **Prototype-Guide.md** (v3.1): 프로토타입 개발 가이드 및 컴포넌트 예시
+- **SmartCON_Lite_UI_Design_Guide.md** (v3.1): UI 디자인 시스템 및 가이드라인
+- **System-Architecture.md** (v2.0): 시스템 아키텍처 및 기술 스택
+- **Functional-Specification.md** (v2.1): 기능 명세서
+- **Development-Process.md** (v2.1): 개발 절차 및 워크플로우
+
+### 9.5. 디자인 시스템
+
+**주요 색상**:
+- Primary: `#71AA44` (회사 주색상, CMYK 55 10 95 00)
+- Secondary: `#333333` (Dark Gray)
+- Destructive: `#E63946` (Red)
+- Success: `#71AA44` (Primary와 동일)
+- Warning: `#FF8C42` (Orange)
+
+**디자인 원칙**:
+- Mobile First 접근
+- 반응형 디자인 (Mobile: ~767px, Tablet: 768px~1023px, Desktop: 1024px~)
+- WCAG 2.1 AA 수준 접근성 준수
+- 직관적이고 효율적인 UI/UX
+
+---
+
+## 10. 추가 자료
 
 - **Cursor 공식 문서**: https://cursor.sh/docs
 - **프롬프트 가이드**: Cursor 내장 튜토리얼
 - **커뮤니티**: Cursor Discord 서버
+- **React 공식 문서**: https://react.dev
+- **Shadcn/UI 문서**: https://ui.shadcn.com
+- **Tailwind CSS 문서**: https://tailwindcss.com
+- **Spring Boot 공식 문서**: https://spring.io/projects/spring-boot
 
 ---
 

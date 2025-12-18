@@ -1,0 +1,23 @@
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default function SalarySite() {
+  return (
+    <DashboardLayout role="site">
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">급여/정산</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>급여 정산 내역</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12 text-muted-foreground">
+              급여 정산 내역이 여기에 표시됩니다.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}
+

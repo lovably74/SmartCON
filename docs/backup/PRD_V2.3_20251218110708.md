@@ -1,0 +1,156 @@
+# SmartCON Lite 구축 상세 요구사항 정의서 (AI-Native)
+
+**문서 버전:** 2.3  
+**작성일:** 2025년 12월 17일  
+**최종 수정일:** 2025년 12월 18일  
+**작성자:** 경영기획실 이대영 이사  
+**기반 문서:** `docs/smartcon_functional_spec_V2.md`, `docs/SmartCON_Lite_UI_Design_Guide.md`
+
+---
+
+## 1. 프로젝트 개요 (Project Overview)
+
+본 프로젝트는 건설 현장의 인력 및 노무 관리를 위한 **'스마트콘 라이트(SmartCON Lite)'** SaaS 플랫폼을 구축하는 것을 목표로 합니다.  
+구독형 모델을 기반으로 하며, 회사(Tenant) 단위의 데이터 격리와 역할별 최적화된 기능을 제공합니다.
+
+### 핵심 목표
+- **SaaS Platform**: 멀티테넌시(Multi-tenancy) 및 구독 결제/관리 시스템 구축
+- **Role-Based Optimization**: 본사/현장/팀장/노무자 + **시스템 관리자(Super Admin)** 5단계 역할 지원
+- **Automation**: 안면인식(FaceNet) 출역 자동화, 전자계약 원스톱 처리, 세금계산서 발행(API)
+- **Mobile First**: 현장 중심의 하이브리드 앱 (React + Capacitor)
+
+---
+
+## 2. 기술 스택 (Tech Stack)
+
+### 2.1 Backend
+- **Language**: Java 17 (LTS)
+- **Framework**: Spring Boot 3.3.x
+- **Database**: MariaDB 10.11 (JPA/Hibernate) - Multi-tenant Schema
+- **Batch**: Spring Batch (안면인식 데이터 동기화, 구독 결제/정산)
+- **Security**: Spring Security 6.x + JWT + OAuth2 Client
+- **Infrastructure**: Docker, AWS (S3 for files)
+
+### 2.2 Frontend (Web & Mobile WebApp)
+- **Framework**: React 18 + TypeScript + Vite
+- **State Mgmt**: TanStack Query + Zustand
+- **UI System**: **Shadcn/UI** + **Tailwind CSS** (Custom Design System applied)
+- **Mobile Bridge**: Capacitor (Camera, Geolocation, Push, Deep Link)
+
+### 2.3 External Interfaces
+- **Face Recognition**: FaceNet (Face Embedding & Matching Server)
+- **Weather**: OpenWeatherMap / KMA API
+- **Direct Messaging**: SMS/AlimTalk Gateway (BizMsg etc.)
+- **Payment & Tax**: PG사 연동 (Subscription) + 홈택스 연동 API (Tax Invoice)
+
+---
+
+## 3. 사용자 역할 및 권한 (User Roles)
+
+### 3.1. 슈퍼 어드민 (Super Admin / SaaS Admin)
+- **권한**: 플랫폼 운영의 최상위 관리자
+- **주요 기능**:
+  - **Tenant 관리**: 가입 회사 현황, 서비스 상태(활성/중지) 관리
+  - **구독/결제 모니터링**: 자동 결제 현황, 미수금 관리
+  - **정산/세무**: 세금계산서 자동 발행 내역 확인, 국세청 전송 상태 모니터링
+
+### 3.2. 본사 관리자 (HQ Administrator / Tenant Admin)
+- **인증**: 인트로 페이지 -> 로그인 버튼 -> 본사 관리자 로그인 선택 -> ID(사업자번호) + 비밀번호
+- **주요 기능**:
+  - **회사/현장 관리**: 현장 개설 및 관리자 초대
+  - **기준 정보**: 공종, 장비, 노무 단가 표준 설정
+  - **구독 관리**: 요금제 변경, 결제 수단 등록, 청구서 조회
+  - **전사 대시보드**: 현장별 공정률, 출역 인원, 계약 체결률 모니터링
+
+### 3.3. 현장 관리자 (Site Manager)
+- **인증**: 인트로 페이지 -> 로그인 버튼 -> 소셜 로그인 선택 -> 소셜 로그인 (Kakao, Naver) -> 현장 선택
+- **주요 기능**:
+  - **운영/설정**: 현장 전용 공종/장비 설정, 안면인식기 관리
+  - **작업 관리**: 작업 팀 배정(Request), 출역 마감(Approval)
+  - **공사일보**: 날씨 자동 연동, 공종별 인원/장비 취합 및 승인
+  - **노무 관리**: 미서명 근로계약서 일괄 요청
+
+### 3.4. 노무 팀장 (Team Leader)
+- **인증**: 인트로 페이지 -> 로그인 버튼 -> 소셜 로그인 선택 -> 소셜 로그인 -> 현장 선택
+- **주요 기능**:
+  - **팀 관리**: 팀원 초대(Link/SMS) 및 승인
+  - **작업 수행**: 현장 작업 요청 수락/거부, 내일 투입 인원 보고
+  - **출역 관리**: 팀원 출역 현황 확인 및 이의 제기, 근로계약 독려
+
+### 3.5. 노무자 (Worker)
+- **인증**: 인트로 페이지 -> 로그인 버튼 -> 소셜 로그인 선택 -> 소셜 로그인 -> 현장 선택
+- **주요 기능**:
+  - **출역 조회**: 일별/월별 공수 및 예상 노임 확인
+  - **전자 계약**: 근로계약서 전자 서명 (Canvas)
+  - **내 정보**: 안면인식 사진 등록, 계좌번호 관리
+
+---
+
+## 4. 핵심 프로세스 및 기능 명세
+
+### 4.1. 구독 및 테넌트 온보딩 (SaaS Onboarding)
+1.  **신청**: 사업자번호 인증 -> 회원가입 (법인/개인사업자)
+2.  **구독 설정**: 요금제 선택 -> 결제 수단(카드/CMS) 등록
+3.  **개통**: Tenant 생성 및 HQ Admin 계정 활성화 -> 즉시 이용 가능
+
+### 4.2. 안면인식 데이터 파이프라인 (FaceNet Flow)
+- **등록**: 사용자 앱에서 셀카 등록 -> SmartCON 서버 저장 -> FaceNet 서버로 임베딩 요청
+- **활성화 (Daily Batch)**:
+  - 매일 자정 (`00:00`) 실행
+  - 금일 작업 투입 예정인 사용자(`WorkAssignment` 승인 건) 필터링
+  - 해당 사용자의 Face Embedding 데이터를 안면인식기(Edge/Cloud) 활성 리스트에 로드
+- **삭제**: 투입 기간 종료 시 활성 리스트에서 제거 (개인정보 보호)
+
+### 4.3. 작업 배정 및 일보 취합 (Work & Report)
+- **작업 요청**: Site Mgr가 '내일'의 공종/위치/인원을 특정 팀에게 요청
+- **수락/거부**: Team Lead가 요청 확인 후 수락 여부 결정 (Push 알림)
+- **일보 자동화**:
+  - 오후 5시 등 특정 시점에 Team Lead가 제출한 투입 내역 집계
+  - 기상청 API로 날씨/기온 자동 입력
+  - Site Mgr는 집계된 데이터를 바탕으로 수정/보완 후 최종 승인
+
+### 4.4. 전자근로계약 (E-Contract)
+- **자동 생성**: 출역 확정 시 표준근로계약서 템플릿에 데이터 바인딩
+- **서명 프로세스**:
+  - 노무자 앱에서 '서명 필요' 알림 수신
+  - 계약서 내용 확인 후 전자 서명 패드 서명
+  - PDF 변환 후 S3 저장 및 Hash 값 DB 기록 (위변조 방지)
+
+---
+
+## 5. 인증 플로우 (Authentication Flow)
+
+### 5.1. 인트로 페이지 (Landing Page)
+- **경로**: `/` (루트 경로)
+- **목적**: 서비스 소개 및 로그인 진입점 제공
+- **구성 요소**:
+  - 메인 메시지: "안전관리, 이제는 스마트하게!"
+  - 서브 메시지: "본사와 현장관리까지 한 번에 업무 끝! 스마트콘 [SmartCON]"
+  - 로그인 버튼: 로그인 방식 선택 페이지로 이동
+  - 문의 및 데모신청 섹션 (선택사항)
+- **디자인**: 참고 사이트 (https://www.ismartcon.net/login/smart/index) 스타일 적용
+
+### 5.2. 로그인 방식 선택
+- **경로**: `/login`
+- **기능**: 사용자가 로그인 방식을 선택
+  - **본사 관리자 로그인**: ID(사업자번호) + 비밀번호 방식
+  - **소셜 로그인**: Kakao, Naver 소셜 로그인
+
+### 5.3. 본사 관리자 로그인
+- **경로**: `/login/hq`
+- **인증 방식**: 사업자번호(ID) + 비밀번호
+
+### 5.4. 소셜 로그인
+- **경로**: `/login/social`
+- **인증 방식**: Kakao, Naver OAuth2
+- **후속 처리**: 로그인 성공 후 현장 선택 또는 역할 선택
+
+---
+
+## 6. 비기능 요구사항
+- **딥링크 (Deep Linking)**: SMS 초대 링크 클릭 시 -> 앱 미설치 시 스토어 이동 / 설치 시 앱 실행 후 해당 화면(초대 수락)으로 직행
+- **반응형 웹**: PC(1920px), Tablet(768px), Mobile(375px) 대응 (Mobile First Design)
+- **보안**: 개인정보(주민번호, 계좌) 마스킹 및 DB 암호화, SSL 적용, 세션 타임아웃(30분)
+- **다국어**: i18n 적용 (한국어, 영어 기본 지원)
+
+---
