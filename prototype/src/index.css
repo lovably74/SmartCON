@@ -5,52 +5,52 @@
   :root {
     /* SmartCON Lite UI 디자인 가이드 색상 시스템 */
     /* Primary: Dark Navy #0F172A */
-    --primary: 220 40 10; /* Dark Navy #0F172A */
+    --primary: 220 40% 10%; /* Dark Navy #0F172A */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary: Teal Green #10B981 */
-    --secondary: 160 84 39; /* Teal Green #10B981 */
+    --secondary: 160 84% 39%; /* Teal Green #10B981 */
     --secondary-foreground: 0 0% 100%;
 
     /* Accent: Sky Blue #0EA5E9 */
-    --accent: 199 89 48; /* Sky Blue #0EA5E9 */
+    --accent: 199 89% 48%; /* Sky Blue #0EA5E9 */
     --accent-foreground: 0 0% 100%;
 
     /* Background: Light Gray #F8FAFC */
-    --background: 210 40 98%; /* Light Gray #F8FAFC */
-    --foreground: 220 13 18%; /* Slate-800 #1E293B */
+    --background: 210 40% 98%; /* Light Gray #F8FAFC */
+    --foreground: 220 13% 18%; /* Slate-800 #1E293B */
 
     /* Surface: White #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 220 13 18%;
+    --card-foreground: 220 13% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13 18%;
+    --popover-foreground: 220 13% 18%;
 
     /* Muted */
-    --muted: 215 16 47%; /* Gray-500 #6B7280 */
-    --muted-foreground: 215 16 47%;
+    --muted: 215 16% 47%; /* Gray-500 #6B7280 */
+    --muted-foreground: 215 16% 47%;
 
     /* Destructive: Red #EF4444 */
-    --destructive: 0 84 60%; /* Red #EF4444 */
+    --destructive: 0 84% 60%; /* Red #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
     /* Warning: Orange #F97316 */
-    --warning: 25 95 53%; /* Orange #F97316 */
+    --warning: 25 95% 53%; /* Orange #F97316 */
     --warning-foreground: 0 0% 100%;
 
     /* Border 및 Input */
-    --border: 214 32 91%; /* Gray-300 #D1D5DB */
-    --input: 214 32 91%;
-    --ring: 199 89 48%; /* Sky Blue #0EA5E9 */
+    --border: 214 32% 91%; /* Gray-300 #D1D5DB */
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%; /* Sky Blue #0EA5E9 */
 
     /* Sidebar (Dark Navy) */
-    --sidebar: 220 40 10%; /* Dark Navy #0F172A */
-    --sidebar-foreground: 210 40 98%;
-    --sidebar-accent: 220 30 15%;
+    --sidebar: 220 40% 10%; /* Dark Navy #0F172A */
+    --sidebar-foreground: 210 40% 98%; /* Light Gray #F8FAFC */
+    --sidebar-accent: 220 30% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 30 20%;
-    --sidebar-ring: 199 89 48%;
+    --sidebar-border: 220 30% 20%;
+    --sidebar-ring: 199 89% 48%; /* Sky Blue #0EA5E9 */
 
     --radius: 0.5rem; /* 8px rounded-lg */
   }

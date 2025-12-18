@@ -1,239 +1,208 @@
-import { useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+import * as React from "react";
 
-export interface DialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  children: React.ReactNode
+// Context to track composition state across dialog children
+const DialogCompositionContext = React.createContext<{
+  isComposing: () => boolean;
+  setComposing: (composing: boolean) => void;
+  justEndedComposing: () => boolean;
+  markCompositionEnd: () => void;
+}>({
+  isComposing: () => false,
+  setComposing: () => {},
+  justEndedComposing: () => false,
+  markCompositionEnd: () => {},
+});
+
+export const useDialogComposition = () =>
+  React.useContext(DialogCompositionContext);
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  const composingRef = React.useRef(false);
+  const justEndedRef = React.useRef(false);
+  const endTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const contextValue = React.useMemo(
+    () => ({
+      isComposing: () => composingRef.current,
+      setComposing: (composing: boolean) => {
+        composingRef.current = composing;
+      },
+      justEndedComposing: () => justEndedRef.current,
+      markCompositionEnd: () => {
+        justEndedRef.current = true;
+        if (endTimerRef.current) {
+          clearTimeout(endTimerRef.current);
+        }
+        endTimerRef.current = setTimeout(() => {
+          justEndedRef.current = false;
+        }, 150);
+      },
+    }),
+    []
+  );
+
+  return (
+    <DialogCompositionContext.Provider value={contextValue}>
+      <DialogPrimitive.Root data-slot="dialog" {...props} />
+    </DialogCompositionContext.Provider>
+  );
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+}
 
-  // 디버깅: Dialog open prop 추적
-  useEffect(() => {
-    console.log('[Dialog] open prop 변경:', open)
-  }, [open])
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+}
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
-        console.log('[Dialog] ESC 키 누름, 모달 닫기')
-        onOpenChange(false)
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+DialogOverlay.displayName = "DialogOverlay";
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  onEscapeKeyDown,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean;
+}) {
+  const { isComposing } = useDialogComposition();
+
+  const handleEscapeKeyDown = React.useCallback(
+    (e: KeyboardEvent) => {
+      // Check both the native isComposing property and our context state
+      // This handles Safari's timing issues with composition events
+      const isCurrentlyComposing = (e as any).isComposing || isComposing();
+
+      // If IME is composing, prevent dialog from closing
+      if (isCurrentlyComposing) {
+        e.preventDefault();
+        return;
       }
-    }
 
-    if (open) {
-      console.log('[Dialog] 모달 열림 - 이벤트 리스너 및 스크롤 제어 설정')
-      document.addEventListener('keydown', handleEscape)
-      // 스크롤 방지 (모달이 열렸을 때)
-      const originalOverflow = document.body.style.overflow
-      console.log('[Dialog] body overflow 원래 값:', originalOverflow, '-> hidden으로 변경')
-      document.body.style.overflow = 'hidden'
-      
-      return () => {
-        console.log('[Dialog] 모달 닫힘 - 이벤트 리스너 제거 및 스크롤 복원')
-        document.removeEventListener('keydown', handleEscape)
-        document.body.style.overflow = originalOverflow
-      }
-    }
-  }, [open, onOpenChange])
+      // Call user's onEscapeKeyDown if provided
+      onEscapeKeyDown?.(e);
+    },
+    [isComposing, onEscapeKeyDown]
+  );
 
-  // Portal 생성 후 DOM 확인 (조건부 return 이전에 hooks 호출)
-  useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => {
-        const portalElements = document.querySelectorAll('[role="dialog"]')
-        console.log('[Dialog] DOM에서 dialog 요소 찾기:', portalElements.length, '개')
-        portalElements.forEach((el, idx) => {
-          console.log(`[Dialog] Dialog 요소 #${idx}:`, el)
-          console.log(`[Dialog] Dialog 요소 #${idx} computed style:`, window.getComputedStyle(el as HTMLElement))
-          console.log(`[Dialog] Dialog 요소 #${idx} 부모 요소:`, el.parentElement)
-          console.log(`[Dialog] Dialog 요소 #${idx} 부모의 부모:`, el.parentElement?.parentElement)
-        })
-      }, 100)
-      return () => clearTimeout(timer)
-    }
-  }, [open])
-
-  console.log('[Dialog] 렌더링 체크, open:', open)
-
-  if (!open) {
-    console.log('[Dialog] open이 false이므로 null 반환')
-    return null
-  }
-
-  console.log('[Dialog] Portal 생성 시작, document.body:', document.body)
-  
-  // Portal을 사용하여 body에 직접 렌더링
-  const portalContent = (
-    <div 
-      className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ 
-        zIndex: 99999,
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0
-      }}
-      ref={(el) => {
-        if (el) {
-          console.log('[Dialog] Portal 컨테이너 DOM 요소 생성됨:', el)
-          console.log('[Dialog] Portal 컨테이너 computed style:', window.getComputedStyle(el))
-          console.log('[Dialog] Portal 컨테이너 z-index:', window.getComputedStyle(el).zIndex)
-        }
-      }}
-    >
-      {/* Overlay - 비활성화 배경 */}
-      <div
-        className="fixed inset-0"
-        style={{
-          backgroundColor: 'rgba(75, 85, 99, 0.92)', // gray-600 with 92% opacity - 더 진한 비활성화 느낌
-          backdropFilter: 'blur(12px)',
-          zIndex: 99999,
-          pointerEvents: 'auto' // 클릭 이벤트 차단
-        }}
-        onClick={() => {
-          console.log('[Dialog] Overlay 클릭됨, 모달 닫기')
-          onOpenChange(false)
-        }}
-        aria-hidden="true"
-        ref={(el) => {
-          if (el) {
-            console.log('[Dialog] Overlay DOM 요소:', el)
-            console.log('[Dialog] Overlay computed style:', window.getComputedStyle(el))
-          }
-        }}
-      />
-      
-      {/* Dialog Content */}
-      <div
-        ref={(el) => {
-          dialogRef.current = el
-          if (el) {
-            console.log('[Dialog] Dialog Content DOM 요소:', el)
-            console.log('[Dialog] Dialog Content computed style:', window.getComputedStyle(el))
-            console.log('[Dialog] Dialog Content z-index:', window.getComputedStyle(el).zIndex)
-            console.log('[Dialog] Dialog Content position:', window.getComputedStyle(el).position)
-            console.log('[Dialog] Dialog Content display:', window.getComputedStyle(el).display)
-            console.log('[Dialog] Dialog Content visibility:', window.getComputedStyle(el).visibility)
-            console.log('[Dialog] Dialog Content offsetParent:', el.offsetParent)
-            console.log('[Dialog] Dialog Content offsetTop:', el.offsetTop, 'offsetLeft:', el.offsetLeft)
-            console.log('[Dialog] Dialog Content clientWidth:', el.clientWidth, 'clientHeight:', el.clientHeight)
-          }
-        }}
-        className="relative"
-        style={{
-          zIndex: 100000,
-          position: 'relative'
-        }}
-        role="dialog"
-        aria-modal="true"
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        )}
+        onEscapeKeyDown={handleEscapeKeyDown}
+        {...props}
       >
         {children}
-      </div>
-    </div>
-  )
-
-  console.log('[Dialog] createPortal 호출, portalContent:', portalContent, 'target:', document.body)
-
-  const result = createPortal(portalContent, document.body)
-  console.log('[Dialog] createPortal 결과:', result)
-  return result
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            <X />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
 }
 
-export interface DialogContentProps {
-  className?: string
-  children: React.ReactNode
-}
-
-export function DialogContent({ className, children }: DialogContentProps) {
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props}
+    />
+  );
+}
+
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
       className={cn(
-        'bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4',
-        'max-h-[90vh] overflow-y-auto',
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         className
       )}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  )
+      {...props}
+    />
+  );
 }
 
-export interface DialogHeaderProps {
-  className?: string
-  children: React.ReactNode
-}
-
-export function DialogHeader({ className, children }: DialogHeaderProps) {
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
-    <div className={cn('mb-4', className)}>
-      {children}
-    </div>
-  )
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props}
+    />
+  );
 }
 
-export interface DialogTitleProps {
-  className?: string
-  children: React.ReactNode
-}
-
-export function DialogTitle({ className, children }: DialogTitleProps) {
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
-    <h2 className={cn('text-xl font-semibold text-gray-900', className)}>
-      {children}
-    </h2>
-  )
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  );
 }
 
-export interface DialogDescriptionProps {
-  className?: string
-  children: React.ReactNode
-}
-
-export function DialogDescription({ className, children }: DialogDescriptionProps) {
-  return (
-    <p className={cn('text-sm text-gray-500 mt-2', className)}>
-      {children}
-    </p>
-  )
-}
-
-export interface DialogFooterProps {
-  className?: string
-  children: React.ReactNode
-}
-
-export function DialogFooter({ className, children }: DialogFooterProps) {
-  return (
-    <div className={cn('flex items-center justify-end gap-2 mt-6', className)}>
-      {children}
-    </div>
-  )
-}
-
-export interface DialogCloseProps {
-  onClick: () => void
-  className?: string
-}
-
-export function DialogClose({ onClick, className }: DialogCloseProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'absolute top-4 right-4 p-1 rounded-md hover:bg-gray-100 transition-colors',
-        className
-      )}
-      aria-label="닫기"
-    >
-      <X size={20} className="text-gray-500" />
-    </button>
-  )
-}
-
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger
+};
