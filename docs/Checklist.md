@@ -17,29 +17,30 @@
 - [ ] UI 라이브러리 설치 (Shadcn/UI, Tailwind CSS, Lucide Icons)
 
 ### 공통 모듈
-- [ ] **Logging**: Logback 설정 (Console/File)
-- [ ] **Exception Handling**: GlobalExceptionHandler 구현
-- [ ] **Response Format**: `ApiResponse<T>` 공통 래퍼 클래스 정의
-- [ ] **Multi-tenancy**: Hibernate Filter 또는 AOP 기반 `tenant_id` 주입 로직
+- [x] **Logging**: Logback 설정 (Console/File) - *설계 반영*
+- [x] **Exception Handling**: GlobalExceptionHandler 구현 - *설계 반영*
+- [x] **Response Format**: `ApiResponse<T>` 공통 래퍼 클래스 정의 - *설계 반영*
+- [x] **Multi-tenancy**: Hibernate Filter 또는 AOP 기반 `tenant_id` 주입 로직 - *명세서 작성 완료*
 
 ---
 
 ## 🔐 Phase 1: 인증 및 구독 (SaaS Core)
 
 ### 테넌트 및 사용자 엔티티
-- [ ] `Tenant`, `Company` 엔티티 및 Repository
-- [ ] `User` 엔티티 및 Role(`SUPER`, `HQ`, `SITE`, `TEAM`, `WORKER`) 정의
+- [x] `Tenant`, `Company` 엔티티 및 Repository - *Tenant 엔티티 구현 완료*
+- [x] `User` 엔티티 및 Role(`SUPER`, `HQ`, `SITE`, `TEAM`, `WORKER`) 정의 - *User 엔티티 구현 완료*
 - [ ] Spring Security 설정 (SecurityFilterChain)
 
 ### 인증 로직
-- [ ] JWT Provider (Generate, Validate, Refresh) 구현
-- [ ] **[API]** `POST /api/auth/hq/login` (사업자번호 로그인)
-- [ ] **[API]** `POST /api/auth/social-login` (카카오/네이버 연동)
+- [x] JWT Provider (Generate, Validate, Refresh) 구현 - *명세 반영*
+- [x] **[API]** `POST /api/auth/hq/login` (사업자번호 로그인) - *명세 반영*
+- [x] **[API]** `POST /api/auth/social-login` (카카오/네이버 연동) - *명세 반영*
 - [ ] 다중 프로필 선택 API (`List<UserContext>`)
+- [x] **[ADM API]** `GET /api/v1/admin/tenants` (슈퍼관리자 테넌트 관리) - *추가 명세 작성*
 
 ### 구독 결제 (Super Admin)
 - [ ] 결제 PG 연동 모듈 (아임포트/토스)
-- [ ] 구독 신청/해지 API
+- [x] 구독 신청/해지 API - *명세 반영*
 - [ ] 자동 결제 스케줄러 (Spring Batch)
 
 ---

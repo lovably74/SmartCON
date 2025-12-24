@@ -1,0 +1,48 @@
+# 테스트 환경 설정 (Testcontainers MariaDB)
+spring:
+  datasource:
+    # Testcontainers에서 동적으로 설정됨
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 900000
+      pool-name: SmartCON-Test-Pool
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        '[format_sql]': true
+        '[use_sql_comments]': true
+  
+  flyway:
+    enabled: false  # 테스트에서는 JPA가 스키마 생성
+
+# 테스트용 로깅 설정
+logging:
+  level:
+    com.smartcon: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.testcontainers: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT 설정 (테스트용)
+jwt:
+  secret: test-jwt-secret-key-for-testing-only
+  access-token-expiration: 3600000    # 1시간 (테스트 편의성)
+  refresh-token-expiration: 86400000  # 1일
+
+# CORS 설정 (테스트용)
+cors:
+  allowed-origins: 
+    - http://localhost:*
+    - http://127.0.0.1:*

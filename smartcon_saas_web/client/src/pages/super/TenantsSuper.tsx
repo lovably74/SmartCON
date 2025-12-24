@@ -11,20 +11,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Building2, MoreHorizontal, Search } from "lucide-react";
 
 export default function TenantsSuper() {
+  const [searchTerm, setSearchTerm] = useState("");
   const tenants = [
-    { id: 1, name: "대우건설", plan: "Enterprise", sites: 15, users: 450, status: "정상", joined: "2024.01.15" },
-    { id: 2, name: "현대건설", plan: "Enterprise", sites: 22, users: 890, status: "정상", joined: "2024.02.01" },
-    { id: 3, name: "GS건설", plan: "Enterprise", sites: 18, users: 620, status: "정상", joined: "2024.02.10" },
-    { id: 4, name: "삼성물산", plan: "Enterprise", sites: 30, users: 1200, status: "정상", joined: "2024.01.05" },
-    { id: 5, name: "포스코이앤씨", plan: "Pro", sites: 8, users: 210, status: "정상", joined: "2024.03.15" },
-    { id: 6, name: "DL이앤씨", plan: "Pro", sites: 12, users: 340, status: "주의", joined: "2024.03.20" },
-    { id: 7, name: "롯데건설", plan: "Pro", sites: 10, users: 280, status: "정상", joined: "2024.04.01" },
-    { id: 8, name: "SK에코플랜트", plan: "Enterprise", sites: 14, users: 410, status: "정상", joined: "2024.04.15" },
-    { id: 9, name: "한화 건설부문", plan: "Pro", sites: 6, users: 150, status: "정지", joined: "2024.05.01" },
-    { id: 10, name: "HDC현대산업개발", plan: "Pro", sites: 9, users: 230, status: "정상", joined: "2024.05.10" },
+    { id: 1, name: "대우건설", bizNo: "123-45-67890", plan: "Enterprise", sites: 15, users: 450, status: "정상", joined: "2024.01.15" },
+    { id: 2, name: "현대건설", bizNo: "234-56-78901", plan: "Enterprise", sites: 22, users: 890, status: "정상", joined: "2024.02.01" },
+    { id: 3, name: "GS건설", bizNo: "345-67-89012", plan: "Enterprise", sites: 18, users: 620, status: "정상", joined: "2024.02.10" },
+    { id: 4, name: "삼성물산", bizNo: "456-78-90123", plan: "Enterprise", sites: 30, users: 1200, status: "정상", joined: "2024.01.05" },
+    { id: 5, name: "포스코이앤씨", bizNo: "567-89-01234", plan: "Pro", sites: 8, users: 210, status: "정상", joined: "2024.03.15" },
+    { id: 6, name: "DL이앤씨", bizNo: "678-90-12345", plan: "Pro", sites: 12, users: 340, status: "주의", joined: "2024.03.20" },
+    { id: 7, name: "롯데건설", bizNo: "789-01-23456", plan: "Pro", sites: 10, users: 280, status: "정상", joined: "2024.04.01" },
+    { id: 8, name: "SK에코플랜트", bizNo: "890-12-34567", plan: "Enterprise", sites: 14, users: 410, status: "정상", joined: "2024.04.15" },
+    { id: 9, name: "한화 건설부문", bizNo: "901-23-45678", plan: "Pro", sites: 6, users: 150, status: "정지", joined: "2024.05.01" },
+    { id: 10, name: "HDC현대산업개발", bizNo: "012-34-56789", plan: "Pro", sites: 9, users: 230, status: "정상", joined: "2024.05.10" },
   ];
 
   return (
@@ -81,7 +90,7 @@ export default function TenantsSuper() {
                     <TableCell>
                       <Badge variant={
                         tenant.status === "정상" ? "default" :
-                        tenant.status === "정지" ? "destructive" : "secondary"
+                          tenant.status === "정지" ? "destructive" : "secondary"
                       } className={
                         tenant.status === "정상" ? "bg-green-500 hover:bg-green-600" : ""
                       }>
@@ -89,9 +98,23 @@ export default function TenantsSuper() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>고객사 관리</DropdownMenuLabel>
+                          <DropdownMenuItem>상세 정보 보기</DropdownMenuItem>
+                          <DropdownMenuItem>비밀번호 초기화</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">상태 변경</DropdownMenuLabel>
+                          <DropdownMenuItem className="text-green-600">활성 상태로 변경</DropdownMenuItem>
+                          <DropdownMenuItem className="text-orange-600">서비스 일시 중지</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">영구 해지 처리</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

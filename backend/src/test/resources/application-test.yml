@@ -1,0 +1,41 @@
+spring:
+  # 테스트 환경에서는 H2를 MariaDB 호환 모드로 사용
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MariaDB;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        '[format_sql]': true
+        '[use_sql_comments]': true
+        dialect: org.hibernate.dialect.MariaDBDialect
+    defer-datasource-initialization: true
+  
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:test-data-init.sql
+  
+  flyway:
+    enabled: false
+
+# 로깅 설정 (테스트용)
+logging:
+  level:
+    '[com.smartcon]': DEBUG
+    '[org.hibernate.SQL]': DEBUG
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# 테스트용 JWT 설정
+jwt:
+  secret: test-jwt-secret-key-for-testing-only
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000

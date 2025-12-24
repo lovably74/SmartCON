@@ -1,0 +1,85 @@
+# 프로덕션 환경 설정 (MariaDB)
+spring:
+  datasource:
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: SmartCON-Prod-Pool
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        '[format_sql]': false
+        '[use_sql_comments]': false
+        '[generate_statistics]': false
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    baseline-version: 0
+    validate-on-migrate: true
+    clean-disabled: true
+    out-of-order: false
+
+# 프로덕션용 로깅 설정
+logging:
+  level:
+    com.smartcon: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO
+    org.springframework.web: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/smartcon-prod.log
+    max-size: 500MB
+    max-history: 90
+    total-size-cap: 10GB
+
+# JWT 설정 (프로덕션)
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}    # 15분
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7일
+
+# CORS 설정 (프로덕션)
+cors:
+  allowed-origins: 
+    - ${CORS_ORIGIN_FRONTEND:https://app.smartcon.kr}
+    - ${CORS_ORIGIN_ADMIN:https://admin.smartcon.kr}
+
+# 프로덕션 보안 설정
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+# 액추에이터 설정 (프로덕션)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

@@ -10,21 +10,66 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, CreditCard, DollarSign, Download } from "lucide-react";
+import { ArrowUpRight, CreditCard, DollarSign, Download, Loader2, AlertTriangle } from "lucide-react";
+import { useBillingStats } from "@/hooks/useAdminApi";
 
 export default function BillingSuper() {
-  const transactions = [
-    { id: 1, tenant: "대우건설", plan: "Enterprise", amount: 3300000, date: "2025.12.18 14:30", status: "결제성공", method: "카드" },
-    { id: 2, tenant: "현대건설", plan: "Enterprise", amount: 3300000, date: "2025.12.18 13:15", status: "결제성공", method: "CMS" },
-    { id: 3, tenant: "한화 건설부문", plan: "Pro", amount: 330000, date: "2025.12.18 11:20", status: "결제실패", method: "카드" },
-    { id: 4, tenant: "GS건설", plan: "Enterprise", amount: 3300000, date: "2025.12.18 10:05", status: "결제성공", method: "CMS" },
-    { id: 5, tenant: "삼성물산", plan: "Enterprise", amount: 3300000, date: "2025.12.18 09:45", status: "결제성공", method: "카드" },
-    { id: 6, tenant: "포스코이앤씨", plan: "Pro", amount: 330000, date: "2025.12.17 16:30", status: "결제성공", method: "카드" },
-    { id: 7, tenant: "DL이앤씨", plan: "Pro", amount: 330000, date: "2025.12.17 15:20", status: "결제성공", method: "CMS" },
-    { id: 8, tenant: "롯데건설", plan: "Pro", amount: 330000, date: "2025.12.17 14:10", status: "결제성공", method: "카드" },
-    { id: 9, tenant: "SK에코플랜트", plan: "Enterprise", amount: 3300000, date: "2025.12.17 11:50", status: "결제성공", method: "CMS" },
-    { id: 10, tenant: "HDC현대산업개발", plan: "Pro", amount: 330000, date: "2025.12.17 10:30", status: "결제성공", method: "카드" },
-  ];
+  const { data: billingStats, isLoading, error } = useBillingStats();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ko-KR', {
+      style: 'currency',
+      currency: 'KRW',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const calculateSuccessRate = () => {
+    if (!billingStats) return 0;
+    const total = billingStats.totalPayments;
+    if (total === 0) return 0;
+    return ((billingStats.completedPayments / total) * 100).toFixed(1);
+  };
+
+  const calculateOutstanding = () => {
+    if (!billingStats) return 0;
+    return billingStats.failedPayments + billingStats.pendingPayments;
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="super">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">데이터를 불러오는 중...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout role="super">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-600">데이터를 불러오는 중 오류가 발생했습니다.</p>
+            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="super">
@@ -46,9 +91,9 @@ export default function BillingSuper() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₩ 125,400,000</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center text-green-600">
-                <ArrowUpRight className="h-3 w-3 mr-1" /> 전월 대비 +12.5%
+              <div className="text-2xl font-bold">{formatCurrency(billingStats?.monthlyRevenue || 0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                오늘: {formatCurrency(billingStats?.dailyRevenue || 0)}
               </p>
             </CardContent>
           </Card>
@@ -58,8 +103,10 @@ export default function BillingSuper() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">98.2%</div>
-              <p className="text-xs text-muted-foreground mt-1">최근 30일 기준</p>
+              <div className="text-2xl font-bold">{calculateSuccessRate()}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                총 {billingStats?.totalPayments}건 중 {billingStats?.completedPayments}건 성공
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -68,53 +115,116 @@ export default function BillingSuper() {
               <DollarSign className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">₩ 3,300,000</div>
-              <p className="text-xs text-muted-foreground mt-1">10건 (재결제 필요)</p>
+              <div className="text-2xl font-bold text-red-600">{calculateOutstanding()}건</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                실패: {billingStats?.failedPayments}건 / 대기: {billingStats?.pendingPayments}건
+              </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* 월별 매출 추이 */}
+        {billingStats?.monthlyTrends && billingStats.monthlyTrends.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>월별 매출 추이</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {billingStats.monthlyTrends.map((trend, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {trend.year}년 {trend.month}월
+                    </span>
+                    <span className="text-lg font-bold">
+                      {formatCurrency(trend.revenue)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 최근 실패한 결제 내역 */}
         <Card>
           <CardHeader>
-            <CardTitle>최근 결제 내역</CardTitle>
+            <CardTitle>최근 결제 실패 내역</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>고객사</TableHead>
-                  <TableHead>요금제</TableHead>
-                  <TableHead>결제 금액</TableHead>
-                  <TableHead>결제 수단</TableHead>
-                  <TableHead>일시</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead className="text-right">영수증</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="font-medium">{tx.tenant}</TableCell>
-                    <TableCell>{tx.plan}</TableCell>
-                    <TableCell>₩ {tx.amount.toLocaleString()}</TableCell>
-                    <TableCell>{tx.method}</TableCell>
-                    <TableCell>{tx.date}</TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        tx.status === "결제성공" ? "outline" : "destructive"
-                      } className={
-                        tx.status === "결제성공" ? "text-green-600 border-green-200 bg-green-50" : ""
-                      }>
-                        {tx.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">보기</Button>
-                    </TableCell>
+            {billingStats?.recentFailedPayments && billingStats.recentFailedPayments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>고객사</TableHead>
+                    <TableHead>결제 금액</TableHead>
+                    <TableHead>실패 사유</TableHead>
+                    <TableHead>일시</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="text-right">액션</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {billingStats.recentFailedPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.companyName}</TableCell>
+                      <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {payment.failureReason}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatDate(payment.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">결제실패</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">재시도</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                최근 결제 실패 내역이 없습니다.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 전체 매출 통계 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>전체 매출 통계</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(billingStats?.totalRevenue || 0)}
+                </div>
+                <p className="text-sm text-muted-foreground">총 매출</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">
+                  {billingStats?.totalPayments || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">총 결제 건수</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {billingStats?.completedPayments || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">성공한 결제</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {billingStats?.failedPayments || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">실패한 결제</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

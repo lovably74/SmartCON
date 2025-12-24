@@ -13,9 +13,24 @@ export default function Subscribe() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [plan, setPlan] = useState("pro");
 
+  const handleVerify = () => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsVerified(true);
+      toast.success("사업자 정보가 확인되었습니다.");
+    }, 1500);
+  };
+
   const handleNext = () => {
+    if (step === 1 && !isVerified) {
+      toast.error("사업자 번호 인증을 먼저 완료해주세요.");
+      return;
+    }
     if (step < 3) setStep(step + 1);
     else handleSubmit();
   };
@@ -44,9 +59,8 @@ export default function Subscribe() {
           <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -z-10"></div>
           {[1, 2, 3].map((s) => (
             <div key={s} className={`flex flex-col items-center gap-2 bg-background px-2 ${step >= s ? "text-primary" : "text-muted-foreground"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 transition-colors ${
-                step >= s ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-background"
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 transition-colors ${step >= s ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-background"
+                }`}>
                 {s}
               </div>
               <span className="text-xs font-medium">
@@ -68,20 +82,28 @@ export default function Subscribe() {
                     <div className="space-y-2">
                       <Label htmlFor="biz-no">사업자등록번호</Label>
                       <div className="flex gap-2">
-                        <Input id="biz-no" placeholder="000-00-00000" />
-                        <Button variant="secondary">인증하기</Button>
+                        <Input id="biz-no" placeholder="000-00-00000" disabled={isVerified} />
+                        <Button
+                          variant={isVerified ? "outline" : "secondary"}
+                          onClick={handleVerify}
+                          disabled={isVerifying || isVerified}
+                        >
+                          {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : isVerified ? "인증완료" : "인증하기"}
+                        </Button>
                       </div>
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> 인증되었습니다. (주식회사 스마트콘)
-                      </p>
+                      {isVerified && (
+                        <p className="text-xs text-green-600 flex items-center gap-1 animate-in fade-in duration-500">
+                          <CheckCircle2 className="h-3 w-3" /> 인증되었습니다. (주식회사 스마트콘)
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="company-name">회사명</Label>
-                      <Input id="company-name" defaultValue="주식회사 스마트콘" disabled />
+                      <Input id="company-name" placeholder="인증 시 자동 입력됨" defaultValue={isVerified ? "주식회사 스마트콘" : ""} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ceo-name">대표자명</Label>
-                      <Input id="ceo-name" defaultValue="홍길동" disabled />
+                      <Input id="ceo-name" placeholder="인증 시 자동 입력됨" defaultValue={isVerified ? "홍길동" : ""} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">관리자 이메일 (ID로 사용됨)</Label>
@@ -145,7 +167,7 @@ export default function Subscribe() {
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <CreditCard className="h-5 w-5" /> 결제 정보 등록
                 </h2>
-                
+
                 <div className="bg-muted/30 p-4 rounded-lg space-y-2 mb-6">
                   <div className="flex justify-between font-medium">
                     <span>선택한 요금제</span>

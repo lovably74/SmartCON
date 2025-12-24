@@ -11,21 +11,95 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MoreHorizontal, Search } from "lucide-react";
+import { Building2, MoreHorizontal, Search, Loader2, AlertTriangle } from "lucide-react";
+import { useTenants, useUpdateTenantStatus } from "@/hooks/useAdminApi";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function TenantsSuper() {
-  const tenants = [
-    { id: 1, name: "대우건설", plan: "Enterprise", sites: 15, users: 450, status: "정상", joined: "2024.01.15" },
-    { id: 2, name: "현대건설", plan: "Enterprise", sites: 22, users: 890, status: "정상", joined: "2024.02.01" },
-    { id: 3, name: "GS건설", plan: "Enterprise", sites: 18, users: 620, status: "정상", joined: "2024.02.10" },
-    { id: 4, name: "삼성물산", plan: "Enterprise", sites: 30, users: 1200, status: "정상", joined: "2024.01.05" },
-    { id: 5, name: "포스코이앤씨", plan: "Pro", sites: 8, users: 210, status: "정상", joined: "2024.03.15" },
-    { id: 6, name: "DL이앤씨", plan: "Pro", sites: 12, users: 340, status: "주의", joined: "2024.03.20" },
-    { id: 7, name: "롯데건설", plan: "Pro", sites: 10, users: 280, status: "정상", joined: "2024.04.01" },
-    { id: 8, name: "SK에코플랜트", plan: "Enterprise", sites: 14, users: 410, status: "정상", joined: "2024.04.15" },
-    { id: 9, name: "한화 건설부문", plan: "Pro", sites: 6, users: 150, status: "정지", joined: "2024.05.01" },
-    { id: 10, name: "HDC현대산업개발", plan: "Pro", sites: 9, users: 230, status: "정상", joined: "2024.05.10" },
-  ];
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = useState(0);
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [newStatus, setNewStatus] = useState<string>("");
+
+  const { data: tenantsData, isLoading, error } = useTenants({
+    search: search || undefined,
+    status: statusFilter || undefined,
+    page,
+    size: 20,
+    sortBy: "createdAt",
+    sortDir: "desc"
+  });
+
+  const updateTenantMutation = useUpdateTenantStatus();
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return '정상';
+      case 'SUSPENDED': return '중지';
+      case 'TERMINATED': return '해지';
+      default: return status;
+    }
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'default';
+      case 'SUSPENDED': return 'secondary';
+      case 'TERMINATED': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (selectedTenant && newStatus) {
+      await updateTenantMutation.mutateAsync({
+        tenantId: selectedTenant.id,
+        status: newStatus
+      });
+      setSelectedTenant(null);
+      setNewStatus("");
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(0); // 검색 시 첫 페이지로 이동
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="super">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">데이터를 불러오는 중...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout role="super">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-600">데이터를 불러오는 중 오류가 발생했습니다.</p>
+            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="super">
@@ -41,12 +115,31 @@ export default function TenantsSuper() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>고객사 목록 ({tenants.length})</CardTitle>
-              <div className="flex w-full max-w-sm items-center space-x-2">
-                <Input placeholder="회사명 또는 사업자번호 검색" />
-                <Button size="icon" variant="ghost">
-                  <Search className="h-4 w-4" />
-                </Button>
+              <CardTitle>고객사 목록 ({tenantsData?.totalElements || 0})</CardTitle>
+              <div className="flex items-center space-x-2">
+                <form onSubmit={handleSearch} className="flex w-full max-w-sm items-center space-x-2">
+                  <Input 
+                    placeholder="회사명 또는 사업자번호 검색" 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <Button type="submit" size="icon" variant="ghost">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </form>
+                <select 
+                  className="px-3 py-2 border rounded-md text-sm"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <option value="">전체 상태</option>
+                  <option value="ACTIVE">정상</option>
+                  <option value="SUSPENDED">중지</option>
+                  <option value="TERMINATED">해지</option>
+                </select>
               </div>
             </div>
           </CardHeader>
@@ -55,8 +148,9 @@ export default function TenantsSuper() {
               <TableHeader>
                 <TableRow>
                   <TableHead>회사명</TableHead>
+                  <TableHead>사업자번호</TableHead>
+                  <TableHead>대표자</TableHead>
                   <TableHead>요금제</TableHead>
-                  <TableHead>운영 현장</TableHead>
                   <TableHead>사용자 수</TableHead>
                   <TableHead>가입일</TableHead>
                   <TableHead>상태</TableHead>
@@ -64,39 +158,138 @@ export default function TenantsSuper() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tenants.map((tenant) => (
+                {tenantsData?.content.map((tenant) => (
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        {tenant.name}
+                        {tenant.companyName}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{tenant.plan}</Badge>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {tenant.businessNo}
                     </TableCell>
-                    <TableCell>{tenant.sites}개</TableCell>
-                    <TableCell>{tenant.users}명</TableCell>
-                    <TableCell>{tenant.joined}</TableCell>
+                    <TableCell>{tenant.representativeName}</TableCell>
                     <TableCell>
-                      <Badge variant={
-                        tenant.status === "정상" ? "default" :
-                        tenant.status === "정지" ? "destructive" : "secondary"
-                      } className={
-                        tenant.status === "정상" ? "bg-green-500 hover:bg-green-600" : ""
-                      }>
-                        {tenant.status}
+                      <Badge variant="outline">{tenant.planId}</Badge>
+                    </TableCell>
+                    <TableCell>{tenant.userCount}명</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(tenant.createdAt).toLocaleDateString('ko-KR')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={getStatusVariant(tenant.status)}
+                        className={tenant.status === "ACTIVE" ? "bg-green-500 hover:bg-green-600" : ""}
+                      >
+                        {getStatusText(tenant.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => {
+                              setSelectedTenant(tenant);
+                              setNewStatus(tenant.status);
+                            }}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>테넌트 관리</DialogTitle>
+                            <DialogDescription>
+                              {tenant.companyName}의 상태를 변경할 수 있습니다.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium">회사명:</span>
+                                <p className="text-muted-foreground">{tenant.companyName}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">사업자번호:</span>
+                                <p className="text-muted-foreground">{tenant.businessNo}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">대표자:</span>
+                                <p className="text-muted-foreground">{tenant.representativeName}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">사용자 수:</span>
+                                <p className="text-muted-foreground">{tenant.userCount}명</p>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">상태 변경</label>
+                              <select 
+                                className="w-full mt-1 px-3 py-2 border rounded-md"
+                                value={newStatus}
+                                onChange={(e) => setNewStatus(e.target.value)}
+                              >
+                                <option value="ACTIVE">정상</option>
+                                <option value="SUSPENDED">중지</option>
+                                <option value="TERMINATED">해지</option>
+                              </select>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button 
+                              onClick={handleStatusChange}
+                              disabled={updateTenantMutation.isPending || newStatus === tenant.status}
+                            >
+                              {updateTenantMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  변경 중...
+                                </>
+                              ) : (
+                                '상태 변경'
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+
+            {/* 페이지네이션 */}
+            {tenantsData && tenantsData.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  {tenantsData.totalElements}개 중 {tenantsData.numberOfElements}개 표시
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={tenantsData.first}
+                  >
+                    이전
+                  </Button>
+                  <span className="text-sm">
+                    {page + 1} / {tenantsData.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={tenantsData.last}
+                  >
+                    다음
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
