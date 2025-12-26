@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 사용자 데이터 접근 리포지토리
@@ -29,4 +30,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 테넌트별 사용자 수 조회
      */
     long countByTenantId(Long tenantId);
+    
+    /**
+     * 테넌트별 사용자 목록 조회
+     */
+    List<User> findByTenantId(Long tenantId);
+    
+    /**
+     * 슈퍼관리자 목록 조회 (임시로 모든 사용자 반환 - 실제로는 역할 기반 필터링 필요)
+     */
+    @Query("SELECT u FROM User u WHERE u.isActive = true")
+    List<User> findSuperAdmins();
 }

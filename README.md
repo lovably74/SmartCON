@@ -39,12 +39,11 @@ SmartCON Lite는 건설 현장의 노무 관리를 자동화하기 위한 시스
 ```
 SmartCON/
 ├── docs/              # 문서
-├── frontend/          # 프론트엔드
-│   ├── web/          # PC/모바일 웹앱 (반응형)
-│   └── mobile/       # 모바일 네이티브앱 (Capacitor)
+├── frontend/          # 프론트엔드 (프로덕션)
+├── prototype/         # 프로토타입 (레거시)
 ├── backend/          # 백엔드 (Spring Boot)
-├── prototype/        # 프로토타입
-└── database/         # 데이터베이스 스크립트
+├── smartcon_saas_web/ # 레거시 웹앱 (아카이브)
+└── prototype_vue_backup/ # 레거시 Vue 프로토타입 (아카이브)
 ```
 
 자세한 구조는 [프로젝트 구조 문서](docs/Project-Structure.md)를 참고하세요.
@@ -116,10 +115,18 @@ SmartCON/
 
 ### 개발 환경 설정
 
-#### 프론트엔드 (웹앱)
+#### 프론트엔드 (프로덕션)
 
 ```bash
-cd frontend/web
+cd frontend
+npm install
+npm run dev
+```
+
+#### 프론트엔드 (프로토타입 - 레거시)
+
+```bash
+cd prototype
 npm install
 npm run dev
 ```
@@ -130,14 +137,6 @@ npm run dev
 cd backend
 mvn clean install
 mvn spring-boot:run
-```
-
-#### 프로토타입
-
-```bash
-cd prototype
-npm install
-npm run dev
 ```
 
 자세한 내용은 각 폴더의 README를 참고하세요.
@@ -178,7 +177,7 @@ mvn test
 
 ### 프론트엔드 테스트
 ```bash
-cd frontend/web
+cd frontend
 npm run test
 ```
 
@@ -193,7 +192,7 @@ npm run test:e2e
 
 ### 웹앱 배포
 ```bash
-cd frontend/web
+cd frontend
 npm run build
 # dist/ 폴더를 정적 파일 서버에 배포
 ```
@@ -207,7 +206,7 @@ mvn clean package
 
 ### 모바일앱 배포
 ```bash
-cd frontend/mobile
+cd frontend
 npm run build
 npx cap sync
 # Android Studio / Xcode에서 빌드 및 배포

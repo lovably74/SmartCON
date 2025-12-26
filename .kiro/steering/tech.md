@@ -31,7 +31,17 @@
 
 ## Common Commands
 
-### Frontend (Prototype)
+### Frontend (Production)
+```bash
+cd frontend
+npm install          # Install dependencies
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run test        # Run tests
+npm run test:run    # Run tests once (no watch)
+```
+
+### Frontend (Prototype - Legacy)
 ```bash
 cd prototype
 npm install          # Install dependencies
@@ -52,7 +62,11 @@ mvn clean package   # Build JAR for production
 
 ### Full Stack Development
 ```bash
-# Start both frontend and backend
+# Start both frontend and backend (production)
+cd frontend && npm run dev &
+cd backend && mvn spring-boot:run
+
+# Start both frontend and backend (prototype)
 cd prototype && npm run dev &
 cd backend && mvn spring-boot:run
 ```

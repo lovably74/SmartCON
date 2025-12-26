@@ -1,0 +1,403 @@
+package com.smartcon.domain.subscription.service;
+
+import com.smartcon.domain.subscription.dto.AutoApprovalRuleDto;
+import com.smartcon.domain.subscription.dto.CreateSubscriptionRequest;
+import com.smartcon.domain.subscription.entity.AutoApprovalRule;
+import com.smartcon.domain.subscription.entity.BillingCycle;
+import com.smartcon.domain.subscription.entity.SubscriptionPlan;
+import com.smartcon.domain.subscription.repository.AutoApprovalRuleRepository;
+import com.smartcon.domain.subscription.repository.SubscriptionPlanRepository;
+import com.smartcon.domain.tenant.entity.Tenant;
+import com.smartcon.domain.tenant.repository.TenantRepository;
+import com.smartcon.global.tenant.TenantContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+
+/**
+ * 자동 승인 규칙 속성 기반 테스트
+ * 
+ * Feature: subscription-approval-workflow
+ * Property 27: Auto-Approval Rule Configuration
+ * Property 28: Auto-Approval Processing and Logging
+ */
+@ExtendWith(MockitoExtension.class)
+class AutoApprovalRulePropertyTest {
+    
+    @Mock
+    private AutoApprovalRuleRepository autoApprovalRuleRepository;
+    
+    @Mock
+    private SubscriptionPlanRepository subscriptionPlanRepository;
+    
+    @Mock
+    private TenantRepository tenantRepository;
+    
+    @Mock
+    private ObjectMapper objectMapper;
+    
+    @InjectMocks
+    private AutoApprovalRuleServiceImpl autoApprovalRuleService;
+    
+    private Tenant testTenant;
+    private SubscriptionPlan testPlan;
+    
+    @BeforeEach
+    void setUp() throws Exception {
+        // 테스트용 테넌트 생성
+        testTenant = new Tenant();
+        testTenant.setId(1L);
+        testTenant.setCompanyName("테스트 회사");
+        testTenant.setBusinessNo("123-45-67890");
+        testTenant.setEmail("test@example.com");
+        testTenant.setPhoneNumber("010-1234-5678");
+        testTenant.setRoadAddress("서울시 강남구");
+        
+        // 테넌트 컨텍스트 설정
+        TenantContext.setCurrentTenantId(testTenant.getId());
+        
+        // 테스트용 구독 요금제 생성
+        testPlan = SubscriptionPlan.builder()
+                .planId("BASIC")
+                .name("기본 요금제")
+                .description("기본 기능을 제공하는 요금제")
+                .monthlyPrice(new BigDecimal("50000"))
+                .maxSites(5)
+                .maxUsers(50)
+                .isActive(true)
+                .sortOrder(1)
+                .build();
+        
+        // Mock 설정
+        when(tenantRepository.findById(anyLong())).thenReturn(Optional.of(testTenant));
+        when(subscriptionPlanRepository.findById("BASIC")).thenReturn(Optional.of(testPlan));
+        when(objectMapper.writeValueAsString(any())).thenReturn("[\"BASIC\"]", "[\"CARD\"]");
+    }
+    
+    /**
+     * Property 27: Auto-Approval Rule Configuration
+     * 자동 승인 규칙 설정 기능 테스트
+     * 
+     * **Validates: Requirements 7.1**
+     */
+    @Test
+    void autoApprovalRuleConfigurationTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule mockRule = AutoApprovalRule.builder()
+                .ruleName("테스트 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\", \"BANK_TRANSFER\"]")
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class))).thenReturn(mockRule);
+        when(autoApprovalRuleRepository.findAll(any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(mockRule)));
+        
+        // Given: 유효한 자동 승인 규칙 설정
+        AutoApprovalRuleDto ruleDto = AutoApprovalRuleDto.builder()
+                .ruleName("테스트 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD", "BANK_TRANSFER"))
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        // When: 자동 승인 규칙을 생성
+        AutoApprovalRuleDto createdRule = autoApprovalRuleService.createRule(ruleDto);
+        
+        // Then: 규칙이 올바르게 생성되고 설정된 조건들이 저장되어야 함
+        assertThat(createdRule).isNotNull();
+        assertThat(createdRule.getRuleName()).isEqualTo("테스트 규칙");
+        assertThat(createdRule.getIsActive()).isTrue();
+        assertThat(createdRule.getPlanIds()).containsExactly(testPlan.getPlanId());
+        assertThat(createdRule.getVerifiedTenantsOnly()).isFalse();
+        assertThat(createdRule.getPaymentMethods()).containsExactly("CARD", "BANK_TRANSFER");
+        assertThat(createdRule.getMaxAmount()).isEqualByComparingTo(new BigDecimal("100000"));
+        assertThat(createdRule.getPriority()).isEqualTo(1);
+        
+        // And: 데이터베이스에서 조회 가능해야 함
+        Page<AutoApprovalRuleDto> allRules = autoApprovalRuleService.getAllRules(PageRequest.of(0, 10));
+        assertThat(allRules.getContent()).hasSize(1);
+    }
+    
+    /**
+     * Property 28: Auto-Approval Processing and Logging
+     * 자동 승인 처리 및 로깅 기능 테스트
+     * 
+     * **Validates: Requirements 7.2, 7.3**
+     */
+    @Test
+    void autoApprovalProcessingAndLoggingTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule mockRule = AutoApprovalRule.builder()
+                .ruleName("테스트 자동 승인 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000")) // 테스트 요금제 가격(50000)보다 큰 값
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class))).thenReturn(mockRule);
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityAsc())
+                .thenReturn(List.of(mockRule));
+        
+        // Given: 자동 승인 시스템이 활성화되어 있고
+        autoApprovalRuleService.toggleAutoApprovalSystem(true);
+        
+        // And: 활성화된 자동 승인 규칙이 존재함
+        AutoApprovalRuleDto ruleDto = AutoApprovalRuleDto.builder()
+                .ruleName("테스트 자동 승인 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRuleDto createdRule = autoApprovalRuleService.createRule(ruleDto);
+        
+        // And: 구독 요청이 자동 승인 조건을 만족함
+        CreateSubscriptionRequest request = new CreateSubscriptionRequest();
+        request.setPlanId(testPlan.getPlanId());
+        request.setBillingCycle(BillingCycle.MONTHLY);
+        request.setAutoRenewal(true);
+        
+        // When: 자동 승인 여부를 평가
+        boolean shouldAutoApprove = autoApprovalRuleService.evaluateAutoApproval(request);
+        
+        // Then: 요금제 가격이 최대 금액 이하이므로 자동 승인되어야 함
+        assertThat(shouldAutoApprove).isTrue();
+        
+        // And: 적용된 규칙을 조회할 수 있어야 함
+        AutoApprovalRuleDto appliedRule = autoApprovalRuleService.getAppliedRule(request);
+        assertThat(appliedRule).isNotNull();
+        assertThat(appliedRule.getRuleName()).isEqualTo(createdRule.getRuleName());
+    }
+    
+    /**
+     * 자동 승인 시스템 비활성화 시 모든 요청이 수동 승인으로 처리되는지 테스트
+     */
+    @Test
+    void autoApprovalDisableFunctionalityTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule mockRule = AutoApprovalRule.builder()
+                .ruleName("비활성화 테스트 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("1000000"))
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class))).thenReturn(mockRule);
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityAsc())
+                .thenReturn(List.of(mockRule));
+        
+        // Given: 자동 승인 시스템이 비활성화되어 있음
+        autoApprovalRuleService.toggleAutoApprovalSystem(false);
+        
+        // And: 활성화된 자동 승인 규칙이 존재함
+        AutoApprovalRuleDto ruleDto = AutoApprovalRuleDto.builder()
+                .ruleName("비활성화 테스트 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("1000000"))
+                .priority(1)
+                .build();
+        
+        autoApprovalRuleService.createRule(ruleDto);
+        
+        // When: 구독 요청을 평가
+        CreateSubscriptionRequest request = new CreateSubscriptionRequest();
+        request.setPlanId(testPlan.getPlanId());
+        request.setBillingCycle(BillingCycle.MONTHLY);
+        
+        boolean shouldAutoApprove = autoApprovalRuleService.evaluateAutoApproval(request);
+        
+        // Then: 자동 승인 시스템이 비활성화되어 있으므로 자동 승인되지 않아야 함
+        assertThat(shouldAutoApprove).isFalse();
+        
+        // And: 적용된 규칙이 없어야 함
+        AutoApprovalRuleDto appliedRule = autoApprovalRuleService.getAppliedRule(request);
+        assertThat(appliedRule).isNull();
+    }
+    
+    /**
+     * 우선순위에 따른 규칙 적용 순서 테스트
+     */
+    @Test
+    void ruleApplicationPriorityTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule highPriorityMockRule = AutoApprovalRule.builder()
+                .ruleName("높은 우선순위 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("30000")) // 테스트 요금제 가격(50000)보다 작음
+                .priority(1)
+                .build();
+        
+        AutoApprovalRule lowPriorityMockRule = AutoApprovalRule.builder()
+                .ruleName("낮은 우선순위 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000")) // 테스트 요금제 가격(50000)보다 큼
+                .priority(2)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class)))
+                .thenReturn(highPriorityMockRule)
+                .thenReturn(lowPriorityMockRule);
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityAsc())
+                .thenReturn(List.of(highPriorityMockRule, lowPriorityMockRule));
+        
+        // Given: 자동 승인 시스템이 활성화되어 있고
+        autoApprovalRuleService.toggleAutoApprovalSystem(true);
+        
+        // And: 서로 다른 우선순위를 가진 두 규칙이 존재함
+        AutoApprovalRuleDto highPriorityRule = AutoApprovalRuleDto.builder()
+                .ruleName("높은 우선순위 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("30000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRuleDto lowPriorityRule = AutoApprovalRuleDto.builder()
+                .ruleName("낮은 우선순위 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("100000"))
+                .priority(2)
+                .build();
+        
+        autoApprovalRuleService.createRule(highPriorityRule);
+        autoApprovalRuleService.createRule(lowPriorityRule);
+        
+        // When: 구독 요청을 평가
+        CreateSubscriptionRequest request = new CreateSubscriptionRequest();
+        request.setPlanId(testPlan.getPlanId());
+        request.setBillingCycle(BillingCycle.MONTHLY);
+        
+        AutoApprovalRuleDto appliedRule = autoApprovalRuleService.getAppliedRule(request);
+        
+        // Then: 테스트 요금제 가격(50000)이 높은 우선순위 규칙의 한도(30000)보다 크므로
+        // 낮은 우선순위 규칙이 적용되어야 함
+        assertThat(appliedRule).isNotNull();
+        assertThat(appliedRule.getRuleName()).isEqualTo("낮은 우선순위 규칙");
+    }
+    
+    /**
+     * 규칙 상태 변경 테스트
+     */
+    @Test
+    void ruleStatusToggleTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule mockRule = AutoApprovalRule.builder()
+                .ruleName("상태 변경 테스트 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRule deactivatedMockRule = AutoApprovalRule.builder()
+                .ruleName("상태 변경 테스트 규칙")
+                .isActive(false)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRule reactivatedMockRule = AutoApprovalRule.builder()
+                .ruleName("상태 변경 테스트 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class))).thenReturn(mockRule);
+        when(autoApprovalRuleRepository.findById(1L))
+                .thenReturn(Optional.of(mockRule))
+                .thenReturn(Optional.of(deactivatedMockRule))
+                .thenReturn(Optional.of(reactivatedMockRule));
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityAsc())
+                .thenReturn(List.of()) // 비활성화 후 빈 목록
+                .thenReturn(List.of(reactivatedMockRule)); // 재활성화 후 포함
+        
+        // Given: 활성화된 자동 승인 규칙
+        AutoApprovalRuleDto ruleDto = AutoApprovalRuleDto.builder()
+                .ruleName("상태 변경 테스트 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRuleDto createdRule = autoApprovalRuleService.createRule(ruleDto);
+        
+        // When: 규칙을 비활성화
+        AutoApprovalRuleDto deactivatedRule = autoApprovalRuleService.toggleRuleStatus(1L, false);
+        
+        // Then: 규칙이 비활성화되어야 함
+        assertThat(deactivatedRule.getIsActive()).isFalse();
+        
+        // And: 활성화된 규칙 목록에서 제외되어야 함
+        List<AutoApprovalRuleDto> activeRules = autoApprovalRuleService.getActiveRules();
+        assertThat(activeRules).isEmpty();
+        
+        // When: 규칙을 다시 활성화
+        AutoApprovalRuleDto reactivatedRule = autoApprovalRuleService.toggleRuleStatus(1L, true);
+        
+        // Then: 규칙이 활성화되어야 함
+        assertThat(reactivatedRule.getIsActive()).isTrue();
+        
+        // And: 활성화된 규칙 목록에 포함되어야 함
+        List<AutoApprovalRuleDto> activeRulesAfterReactivation = autoApprovalRuleService.getActiveRules();
+        assertThat(activeRulesAfterReactivation).hasSize(1);
+    }
+}

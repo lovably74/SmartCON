@@ -5,8 +5,9 @@
 SmartCON/
 ├── docs/                    # Documentation (PRD, guides, architecture)
 ├── backend/                 # Spring Boot backend application
-├── prototype/              # React frontend prototype/development
-├── smartcon_saas_web/      # Production web application
+├── frontend/               # React frontend application (production)
+├── prototype/              # React frontend prototype/development (legacy)
+├── smartcon_saas_web/      # Legacy production web application (archived)
 ├── prototype_vue_backup/   # Legacy Vue.js prototype (archived)
 └── .kiro/                  # Kiro AI assistant configuration
 ```
@@ -30,7 +31,7 @@ backend/src/main/java/com/smartcon/
 
 ## Frontend Structure (React)
 ```
-prototype/src/
+frontend/src/                # Production frontend application
 ├── components/
 │   ├── ui/                # Shadcn/UI base components
 │   └── layout/            # Layout components
@@ -45,6 +46,9 @@ prototype/src/
 ├── stores/                # Zustand state stores
 ├── mock-data/             # Development mock data
 └── lib/                   # Utilities and configurations
+
+prototype/src/              # Legacy prototype (maintained for reference)
+├── [Same structure as frontend/src/]
 ```
 
 ## Naming Conventions

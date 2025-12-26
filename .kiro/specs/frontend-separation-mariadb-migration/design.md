@@ -6,36 +6,62 @@
 
 ## Architecture
 
+## Architecture
+
 ### 현재 아키텍처
-```
-SmartCON/
-├── prototype/          # React 프로토타입 (포트 3000)
-├── backend/           # Spring Boot + H2 (포트 8080)
-└── docs/             # 문서
+```mermaid
+graph TB
+    subgraph "Current Architecture"
+        P[Prototype React App<br/>Port 3000] --> B[Spring Boot Backend<br/>Port 8080]
+        B --> H2[H2 In-Memory Database]
+        D[Documentation] 
+    end
 ```
 
 ### 목표 아키텍처
-```
-SmartCON/
-├── frontend/          # 프로덕션 React 앱 (포트 5173)
-├── prototype/         # 프로토타입 (유지, 포트 3000)
-├── backend/          # Spring Boot + MariaDB (포트 8080)
-├── docs/            # 문서
-└── docker/          # Docker 설정
-    ├── docker-compose.yml
-    └── mariadb/
-        ├── init/
-        └── data/
+```mermaid
+graph TB
+    subgraph "Target Architecture"
+        F[Production Frontend<br/>Port 5173] --> API[REST API<br/>Port 8080]
+        P[Prototype<br/>Port 3000] -.-> API
+        API --> SB[Spring Boot Backend]
+        SB --> CP[HikariCP Connection Pool]
+        CP --> M[(MariaDB 10.11<br/>Port 3306)]
+        
+        subgraph "Development Environment"
+            LM[(Local MariaDB<br/>smartcon_local)]
+        end
+        
+        subgraph "Testing Environment"
+            TC[Testcontainers<br/>MariaDB Instances]
+        end
+        
+        SB -.-> LM
+        SB -.-> TC
+    end
 ```
 
 ### 데이터베이스 아키텍처 변경
-```
-Before: Spring Boot → H2 (In-Memory)
-After:  Spring Boot → MariaDB (Persistent)
-                   ↓
-              Connection Pool (HikariCP)
-                   ↓
-              Multi-tenant Schema
+```mermaid
+graph LR
+    subgraph "Before"
+        SB1[Spring Boot] --> H2[H2 In-Memory<br/>Temporary Data]
+    end
+    
+    subgraph "After"
+        SB2[Spring Boot] --> HCP[HikariCP<br/>Connection Pool]
+        HCP --> MDB[(MariaDB<br/>Persistent Data)]
+        
+        subgraph "Multi-tenant Schema"
+            T1[Tenant 1 Data<br/>tenant_id = 1]
+            T2[Tenant 2 Data<br/>tenant_id = 2]
+            TN[Tenant N Data<br/>tenant_id = N]
+        end
+        
+        MDB --> T1
+        MDB --> T2
+        MDB --> TN
+    end
 ```
 
 ## Components and Interfaces
@@ -75,32 +101,94 @@ frontend/
 └── .env.example
 ```
 
-#### 1.2 환경별 설정
+#### 1.2 환경별 설정 및 보안
 ```typescript
 // frontend/src/config/environment.ts
 interface Environment {
   API_BASE_URL: string;
   NODE_ENV: 'development' | 'staging' | 'production';
   ENABLE_DEVTOOLS: boolean;
+  API_TIMEOUT: number;
+  RETRY_ATTEMPTS: number;
 }
 
 const environments: Record<string, Environment> = {
   development: {
-    API_BASE_URL: 'http://localhost:8080/api',
+    API_BASE_URL: 'http://localhost:8080/api/v1',
     NODE_ENV: 'development',
     ENABLE_DEVTOOLS: true,
+    API_TIMEOUT: 10000,
+    RETRY_ATTEMPTS: 3,
   },
   staging: {
-    API_BASE_URL: 'https://api-staging.smartcon.kr/api',
+    API_BASE_URL: 'https://api-staging.smartcon.kr/api/v1',
     NODE_ENV: 'staging',
     ENABLE_DEVTOOLS: false,
+    API_TIMEOUT: 15000,
+    RETRY_ATTEMPTS: 2,
   },
   production: {
-    API_BASE_URL: 'https://api.smartcon.kr/api',
+    API_BASE_URL: 'https://api.smartcon.kr/api/v1',
     NODE_ENV: 'production',
     ENABLE_DEVTOOLS: false,
+    API_TIMEOUT: 20000,
+    RETRY_ATTEMPTS: 1,
   },
 };
+
+export const getEnvironment = (): Environment => {
+  const env = import.meta.env.MODE || 'development';
+  return environments[env] || environments.development;
+};
+```
+
+#### 1.3 API 클라이언트 아키텍처
+```typescript
+// frontend/src/services/api/client.ts
+class ApiClient {
+  private axiosInstance: AxiosInstance;
+  private tokenManager: TokenManager;
+  
+  constructor() {
+    const config = getEnvironment();
+    this.axiosInstance = axios.create({
+      baseURL: config.API_BASE_URL,
+      timeout: config.API_TIMEOUT,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+    
+    this.setupInterceptors();
+  }
+  
+  private setupInterceptors() {
+    // Request interceptor for auth token
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        const token = this.tokenManager.getAccessToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+    
+    // Response interceptor for token refresh
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401) {
+          await this.tokenManager.refreshToken();
+          return this.axiosInstance.request(error.config);
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+}
 ```
 
 ### 2. 백엔드 컴포넌트
@@ -127,33 +215,40 @@ spring:
     baseline-on-migrate: true
 ```
 
-#### 2.2 환경별 데이터베이스 설정
+#### 2.2 환경별 데이터베이스 설정 및 보안
 ```yaml
 # application-local.yml
 spring:
   datasource:
-    url: jdbc:mariadb://localhost:3306/smartcon_local
+    url: jdbc:mariadb://localhost:3306/smartcon_local?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&allowPublicKeyRetrieval=true
     username: smartcon_user
     password: smartcon_pass
     driver-class-name: org.mariadb.jdbc.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
 
 # application-dev.yml
 spring:
   datasource:
-    url: jdbc:mariadb://mariadb-dev:3306/smartcon_dev
+    url: jdbc:mariadb://${DB_HOST:mariadb-dev}:${DB_PORT:3306}/${DB_NAME:smartcon_dev}?useUnicode=true&characterEncoding=utf8mb4&useSSL=true&serverSslCert=/etc/ssl/certs/server-cert.pem
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
 # application-prod.yml
 spring:
   datasource:
-    url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?useUnicode=true&characterEncoding=utf8mb4&useSSL=true&requireSSL=true&verifyServerCertificate=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
@@ -162,6 +257,49 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # Production-specific JPA settings
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDB106Dialect
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+```
+
+#### 2.3 연결 풀 모니터링 및 헬스 체크
+```java
+@Component
+@Slf4j
+public class DatabaseConnectionMonitor {
+    
+    @Autowired
+    private HikariDataSource dataSource;
+    
+    @Scheduled(fixedRate = 30000) // 30초마다 체크
+    public void monitorConnectionPool() {
+        HikariPoolMXBean poolBean = dataSource.getHikariPoolMXBean();
+        
+        log.info("Connection Pool Status - Active: {}, Idle: {}, Total: {}, Waiting: {}", 
+            poolBean.getActiveConnections(),
+            poolBean.getIdleConnections(),
+            poolBean.getTotalConnections(),
+            poolBean.getThreadsAwaitingConnection());
+            
+        if (poolBean.getActiveConnections() > poolBean.getMaximumPoolSize() * 0.8) {
+            log.warn("Connection pool usage is high: {}%", 
+                (poolBean.getActiveConnections() * 100.0) / poolBean.getMaximumPoolSize());
+        }
+    }
+}
 ```
 
 ### 3. Docker 컴포넌트
@@ -559,68 +697,104 @@ test.describe('Login Flow', () => {
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
 ### Property 1: Frontend Technology Stack Consistency
-*For any* frontend project configuration, the package.json should contain React 18+, TypeScript 5+, Vite 5+, Zustand, and TanStack Query with compatible versions
-**Validates: Requirements 1.2, 1.5**
+*For any* frontend project configuration, the package.json should contain React 18+, TypeScript 5+, and Vite 5+ with compatible versions
+**Validates: Requirements 1.2**
 
-### Property 2: Frontend UI Component Completeness
+### Property 2: Frontend UI Component Availability
 *For any* required UI component from Shadcn/UI library, it should be importable and functional in the frontend application
 **Validates: Requirements 1.3**
 
-### Property 3: Role-based Routing Preservation
+### Property 3: Role-based Routing Completeness
 *For any* user role (super, hq, site, team, worker), all expected routes should be accessible and properly configured in the frontend routing system
 **Validates: Requirements 1.4**
 
-### Property 4: Frontend Production Build Optimization
-*For any* production build output, the generated files should be minified, tree-shaken, and optimized for deployment
+### Property 4: Frontend State Management Configuration
+*For any* state management requirement, the frontend should use Zustand for client state and TanStack Query for server state
+**Validates: Requirements 1.5**
+
+### Property 5: Frontend Production Build Optimization
+*For any* production build output, the generated files should include minification, tree-shaking, and code splitting optimizations
 **Validates: Requirements 1.6**
 
-### Property 5: Entity-MariaDB Compatibility
-*For any* JPA entity in the system, it should be persistable and retrievable correctly when using MariaDB as the database
+### Property 6: Backend MariaDB Configuration
+*For any* database connection attempt, the backend should connect to MariaDB 10.11 instead of H2 database
+**Validates: Requirements 2.1**
+
+### Property 7: JPA Entity MariaDB Compatibility
+*For any* JPA entity in the system, it should maintain all existing relationships and constraints when using MariaDB
 **Validates: Requirements 2.2**
 
-### Property 6: Flyway Migration Execution
+### Property 8: Flyway Migration Execution
 *For any* Flyway migration script, it should execute successfully and create the expected database schema changes
 **Validates: Requirements 2.3**
 
-### Property 7: Multi-tenant Data Isolation
-*For any* tenant-specific data operation, the data should be properly isolated and not accessible to other tenants
+### Property 9: Local MariaDB Connectivity
+*For any* local development environment, the backend should successfully connect to MariaDB using the local configuration
+**Validates: Requirements 2.4**
+
+### Property 10: HikariCP Connection Pool Configuration
+*For any* database connection request, the system should use HikariCP connection pooling optimized for MariaDB
+**Validates: Requirements 2.5**
+
+### Property 11: Multi-tenant Data Isolation
+*For any* tenant-specific data operation, the data should be properly isolated using tenant_id filtering and not accessible to other tenants
 **Validates: Requirements 2.6**
 
-### Property 8: Build Configuration Independence
+### Property 12: Local Database Setup Verification
+*For any* local MariaDB installation, the system should create smartcon_local database and smartcon_user with appropriate privileges
+**Validates: Requirements 3.2**
+
+### Property 13: Database Initialization Script Execution
+*For any* database initialization script, it should execute successfully and populate the expected development data
+**Validates: Requirements 3.3**
+
+### Property 14: Local MariaDB Connection String Usage
+*For any* local development configuration, the backend should use the jdbc:mariadb://localhost:3306/smartcon_local connection string
+**Validates: Requirements 3.5**
+
+### Property 15: Build Configuration Independence
 *For any* build process (frontend or backend), it should execute successfully without dependencies on the other component's build process
 **Validates: Requirements 4.4**
 
-### Property 9: API Backward Compatibility
+### Property 16: API Backward Compatibility
 *For any* existing API endpoint, it should continue to function correctly with the same request/response format after the migration
 **Validates: Requirements 4.5**
 
-### Property 10: Database Schema Migration Completeness
-*For any* table or index that existed in H2, an equivalent structure should be created in MariaDB after migration
+### Property 17: Database Schema Migration Completeness
+*For any* migration execution, all necessary tables, indexes, and foreign key constraints should be created correctly in MariaDB
 **Validates: Requirements 5.2**
 
-### Property 11: JPA Entity MariaDB Validation
-*For any* JPA entity operation (create, read, update, delete), it should work correctly with MariaDB maintaining data integrity
+### Property 18: Initial Data Seeding Functionality
+*For any* data seeding script, it should populate the database with the expected development and testing data
+**Validates: Requirements 5.3**
+
+### Property 19: JPA Entity CRUD Operations
+*For any* JPA entity, all CRUD operations should work correctly with MariaDB maintaining data integrity
 **Validates: Requirements 5.4**
 
-### Property 12: Database Referential Integrity
-*For any* foreign key relationship in the database, the referential integrity constraints should be properly enforced in MariaDB
+### Property 20: Database Constraint Preservation
+*For any* referential integrity constraint or database index, it should exist and function correctly in MariaDB
 **Validates: Requirements 5.5**
 
-### Property 13: Environment-specific Database Connectivity
+### Property 21: Environment-specific Database Connectivity
 *For any* environment configuration (local, dev, prod), the backend should connect to the appropriate MariaDB instance based on the active profile
 **Validates: Requirements 6.2**
 
-### Property 14: Frontend Environment Configuration
-*For any* environment setting (development, staging, production), the frontend should use the correct API endpoints and configuration values
-**Validates: Requirements 6.3**
+### Property 22: Testcontainers MariaDB Configuration
+*For any* integration test execution, the system should use Testcontainers with MariaDB 10.11 for isolated testing
+**Validates: Requirements 7.1**
 
-### Property 15: Test Database Isolation
-*For any* test execution, each test should use an isolated MariaDB instance without affecting other concurrent tests
+### Property 23: Test Database Isolation
+*For any* test class execution, each test should use a completely isolated MariaDB container instance
 **Validates: Requirements 7.2**
 
-### Property 16: Test Suite Preservation
+### Property 24: Test Suite Preservation
 *For any* existing unit or integration test, it should continue to pass successfully with the new MariaDB configuration
 **Validates: Requirements 7.3**
+
+### Property 25: Test Data Fixture Functionality
+*For any* test data fixture or initialization script, it should work correctly with MariaDB for testing purposes
+**Validates: Requirements 7.5**
 
 ## 프로젝트 마이그레이션 단계별 계획
 

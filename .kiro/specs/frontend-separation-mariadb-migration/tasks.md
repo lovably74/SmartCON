@@ -4,6 +4,17 @@
 
 이 구현 계획은 SmartCON Lite 프로젝트에서 프로토타입과 별도의 프로덕션 프론트엔드를 분리하고, 백엔드의 H2 인메모리 데이터베이스를 MariaDB로 전환하는 작업을 단계별로 수행합니다. 각 작업은 점진적으로 진행되며, 기존 기능의 호환성을 유지하면서 새로운 아키텍처로 전환합니다.
 
+**현재 완료된 백엔드 작업:**
+- ✅ 로컬 PC MariaDB 직접 설치 및 설정
+- ✅ Maven 의존성 업데이트 및 MariaDB 드라이버 추가
+- ✅ 환경별 application.yml 설정 파일 생성
+- ✅ Flyway 마이그레이션 스크립트 작성 (V1, V2, V3)
+- ✅ JPA 엔티티 MariaDB 호환성 업데이트
+- ✅ 멀티테넌트 데이터 격리 MariaDB 적용
+- ✅ Testcontainers MariaDB 테스트 환경 구성
+
+**다음 단계:** 슈퍼관리자용 프론트엔드 분리 작업 진행
+
 ## Tasks
 
 - [x] 1. 로컬 PC MariaDB 직접 설치 및 설정
@@ -13,8 +24,8 @@
   - _Requirements: 3.1, 3.2, 3.5_
 
 - [ ]* 1.1 로컬 MariaDB 연결 검증 테스트
-  - **Property 15: Test Database Isolation**
-  - **Validates: Requirements 7.2**
+  - **Property 12: Local Database Setup Verification**
+  - **Validates: Requirements 3.2**
 
 - [ ] 2. 백엔드 MariaDB 설정 및 의존성 업데이트
   - [x] 2.1 Maven 의존성 업데이트 및 MariaDB 드라이버 추가
@@ -29,8 +40,8 @@
     - _Requirements: 2.1, 6.1, 6.2_
 
   - [ ]* 2.3 MariaDB 연결 설정 검증 테스트
-    - **Property 13: Environment-specific Database Connectivity**
-    - **Validates: Requirements 6.2**
+    - **Property 6: Backend MariaDB Configuration**
+    - **Validates: Requirements 2.1**
 
 - [ ] 3. Flyway 마이그레이션 스크립트 작성
   - [x] 3.1 기존 H2 스키마 분석 및 MariaDB 호환 스키마 생성
@@ -49,11 +60,11 @@
     - _Requirements: 5.3_
 
   - [ ]* 3.4 Flyway 마이그레이션 실행 테스트
-    - **Property 6: Flyway Migration Execution**
+    - **Property 8: Flyway Migration Execution**
     - **Validates: Requirements 2.3**
 
   - [ ]* 3.5 데이터베이스 스키마 완성도 검증 테스트
-    - **Property 10: Database Schema Migration Completeness**
+    - **Property 17: Database Schema Migration Completeness**
     - **Validates: Requirements 5.2**
 
 - [ ] 4. JPA 엔티티 MariaDB 호환성 업데이트
@@ -68,11 +79,11 @@
     - _Requirements: 2.2, 5.4_
 
   - [ ]* 4.3 JPA 엔티티 MariaDB 호환성 테스트
-    - **Property 5: Entity-MariaDB Compatibility**
+    - **Property 7: JPA Entity MariaDB Compatibility**
     - **Validates: Requirements 2.2**
 
   - [ ]* 4.4 JPA 엔티티 CRUD 작업 검증 테스트
-    - **Property 11: JPA Entity MariaDB Validation**
+    - **Property 19: JPA Entity CRUD Operations**
     - **Validates: Requirements 5.4**
 
 - [ ] 5. 멀티테넌트 데이터 격리 MariaDB 적용
@@ -82,11 +93,11 @@
     - _Requirements: 2.6_
 
   - [ ]* 5.2 멀티테넌트 데이터 격리 검증 테스트
-    - **Property 7: Multi-tenant Data Isolation**
+    - **Property 11: Multi-tenant Data Isolation**
     - **Validates: Requirements 2.6**
 
   - [ ]* 5.3 데이터베이스 참조 무결성 검증 테스트
-    - **Property 12: Database Referential Integrity**
+    - **Property 20: Database Constraint Preservation**
     - **Validates: Requirements 5.5**
 
 - [-] 6. Testcontainers MariaDB 테스트 환경 구성
@@ -101,7 +112,7 @@
     - _Requirements: 7.3_
 
   - [ ]* 6.3 기존 테스트 스위트 보존 검증
-    - **Property 16: Test Suite Preservation**
+    - **Property 24: Test Suite Preservation**
     - **Validates: Requirements 7.3**
 
 - [ ] 7. 체크포인트 - 백엔드 MariaDB 전환 완료 검증
@@ -135,10 +146,10 @@
 
   - [ ]* 9.3 프론트엔드 기술 스택 일관성 검증 테스트
     - **Property 1: Frontend Technology Stack Consistency**
-    - **Validates: Requirements 1.2, 1.5**
+    - **Validates: Requirements 1.2**
 
   - [ ]* 9.4 프론트엔드 프로덕션 빌드 최적화 검증 테스트
-    - **Property 4: Frontend Production Build Optimization**
+    - **Property 5: Frontend Production Build Optimization**
     - **Validates: Requirements 1.6**
 
 - [ ] 10. 슈퍼관리자용 UI 컴포넌트 및 라우팅 설정
@@ -153,11 +164,11 @@
     - _Requirements: 1.4_
 
   - [ ]* 10.3 UI 컴포넌트 완성도 검증 테스트
-    - **Property 2: Frontend UI Component Completeness**
+    - **Property 2: Frontend UI Component Availability**
     - **Validates: Requirements 1.3**
 
   - [ ]* 10.4 슈퍼관리자 라우팅 보존 검증 테스트
-    - **Property 3: Role-based Routing Preservation**
+    - **Property 3: Role-based Routing Completeness**
     - **Validates: Requirements 1.4**
 
 - [ ] 11. 슈퍼관리자용 환경별 프론트엔드 설정 구성
@@ -172,8 +183,8 @@
     - _Requirements: 6.3_
 
   - [ ]* 11.3 프론트엔드 환경 설정 검증 테스트
-    - **Property 14: Frontend Environment Configuration**
-    - **Validates: Requirements 6.3**
+    - **Property 21: Environment-specific Database Connectivity**
+    - **Validates: Requirements 6.2**
 
 - [ ] 12. 슈퍼관리자용 빌드 및 배포 설정 분리
   - [ ] 12.1 슈퍼관리자 프론트엔드 독립적인 빌드 설정
@@ -187,7 +198,7 @@
     - _Requirements: 4.4_
 
   - [ ]* 12.3 빌드 설정 독립성 검증 테스트
-    - **Property 8: Build Configuration Independence**
+    - **Property 15: Build Configuration Independence**
     - **Validates: Requirements 4.4**
 
 - [ ] 13. 슈퍼관리자 API 호환성 검증 및 통합 테스트

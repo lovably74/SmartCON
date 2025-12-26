@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/subscription")
 @RequiredArgsConstructor
-public class SubscriptionController {
+public class TenantOnboardingController {
 
     // private final SubscriptionService subscriptionService;
 

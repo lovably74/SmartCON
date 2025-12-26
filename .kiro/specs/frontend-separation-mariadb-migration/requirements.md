@@ -20,12 +20,12 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE Frontend SHALL be created as a separate directory structure from the prototype
-2. WHEN the frontend is created, THE Frontend SHALL use the same technology stack as the prototype (React 18 + TypeScript + Vite)
-3. THE Frontend SHALL include all UI components from Shadcn/UI library
-4. THE Frontend SHALL implement the same role-based routing structure as the prototype
-5. THE Frontend SHALL use Zustand for state management and TanStack Query for server state
-6. THE Frontend SHALL be configured for production deployment with proper build optimization
+1. THE Frontend SHALL be created as a separate directory structure from the Prototype
+2. WHEN the Frontend is created, THE Frontend SHALL use React 18, TypeScript 5, and Vite 5 as the core technology stack
+3. THE Frontend SHALL include all required UI components from the Shadcn/UI library
+4. THE Frontend SHALL implement role-based routing for super, hq, site, team, and worker roles
+5. THE Frontend SHALL use Zustand for client state management and TanStack Query for server state management
+6. THE Frontend SHALL be configured for production deployment with minification, tree-shaking, and code splitting optimization
 
 ### Requirement 2: 백엔드 MariaDB 전환
 
@@ -33,12 +33,12 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE Backend SHALL be configured to use MariaDB instead of H2 database
-2. WHEN MariaDB is configured, THE Backend SHALL maintain all existing entity relationships and constraints
-3. THE Backend SHALL include Flyway migration scripts for database schema management
-4. THE Backend SHALL support local MariaDB installation for development
-5. THE Backend SHALL include proper connection pooling configuration for MariaDB
-6. THE Backend SHALL maintain multi-tenant data isolation with MariaDB
+1. THE Backend SHALL be configured to use MariaDB 10.11 instead of H2_Database
+2. WHEN MariaDB is configured, THE Backend SHALL maintain all existing JPA entity relationships and database constraints
+3. THE Backend SHALL include Flyway migration scripts for automated database schema management
+4. THE Backend SHALL support local MariaDB installation for development environment
+5. THE Backend SHALL include HikariCP connection pooling configuration optimized for MariaDB
+6. THE Backend SHALL maintain multi-tenant data isolation using tenant_id filtering with MariaDB
 
 ### Requirement 3: 로컬 개발 환경 설정
 
@@ -46,11 +46,11 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE System SHALL provide Docker Compose configuration for local MariaDB setup
-2. WHEN MariaDB is installed locally, THE System SHALL create appropriate databases and users
-3. THE System SHALL include initialization scripts for local development data
-4. THE System SHALL provide clear documentation for local MariaDB installation and configuration
-5. THE Backend SHALL connect to local MariaDB with proper credentials and connection settings
+1. THE System SHALL provide MariaDB 10.11 installation guide for local development setup
+2. WHEN MariaDB is installed locally, THE System SHALL create smartcon_local database and smartcon_user with appropriate privileges
+3. THE System SHALL include database initialization scripts for local development data seeding
+4. THE System SHALL provide step-by-step documentation for local MariaDB installation and configuration
+5. THE Backend SHALL connect to local MariaDB using jdbc:mariadb://localhost:3306/smartcon_local connection string
 
 ### Requirement 4: 프로젝트 구조 재구성
 
@@ -58,11 +58,11 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE Project SHALL maintain the prototype directory for reference and testing
-2. THE Project SHALL create a new frontend directory with production-ready structure
-3. THE Project SHALL update documentation to reflect the new project structure
-4. THE Project SHALL include separate build and deployment configurations for frontend and backend
-5. THE Project SHALL maintain backward compatibility with existing API endpoints
+1. THE Project SHALL maintain the Prototype directory for reference and testing purposes
+2. THE Project SHALL create a new Frontend directory with production-ready structure separate from Prototype
+3. THE Project SHALL update all documentation to reflect the new project structure with Frontend and Backend separation
+4. THE Project SHALL include separate build configurations for Frontend and Backend with no cross-dependencies
+5. THE Project SHALL maintain backward compatibility with all existing API endpoints during the transition
 
 ### Requirement 5: 데이터 마이그레이션 및 초기화
 
@@ -70,11 +70,11 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE System SHALL create Flyway migration scripts based on existing H2 schema
-2. WHEN migrations are executed, THE System SHALL create all necessary tables and indexes
-3. THE System SHALL include initial data seeding for development and testing
-4. THE System SHALL validate that all existing JPA entities work correctly with MariaDB
-5. THE System SHALL maintain referential integrity and constraints in MariaDB
+1. THE System SHALL create Flyway migration scripts V1, V2, V3 based on existing H2_Database schema
+2. WHEN migrations are executed, THE System SHALL create all necessary tables, indexes, and foreign key constraints
+3. THE System SHALL include initial data seeding scripts for development and testing environments
+4. THE System SHALL validate that all existing JPA entities perform CRUD operations correctly with MariaDB
+5. THE System SHALL maintain all referential integrity constraints and database indexes in MariaDB
 
 ### Requirement 6: 환경 설정 및 구성
 
@@ -82,11 +82,11 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE Backend SHALL include separate configuration files for different environments
-2. WHEN environment configurations are set, THE Backend SHALL use appropriate database connections
-3. THE Frontend SHALL include environment-specific API endpoint configurations
-4. THE System SHALL include Docker configurations for containerized deployment
-5. THE System SHALL provide clear environment variable documentation
+1. THE Backend SHALL include application-local.yml, application-dev.yml, and application-prod.yml configuration files
+2. WHEN environment configurations are set, THE Backend SHALL use appropriate MariaDB connection strings and credentials
+3. THE Frontend SHALL include .env.development, .env.staging, and .env.production files with API endpoint configurations
+4. THE System SHALL include Docker configurations for containerized deployment in staging and production environments
+5. THE System SHALL provide comprehensive environment variable documentation with examples and security guidelines
 
 ### Requirement 7: 테스트 환경 구성
 
@@ -94,8 +94,8 @@ SmartCON Lite 프로젝트에서 현재 프로토타입으로 사용되고 있�
 
 #### Acceptance Criteria
 
-1. THE Backend SHALL use Testcontainers for MariaDB integration tests
-2. WHEN tests are executed, THE System SHALL use isolated MariaDB instances
-3. THE Backend SHALL maintain all existing unit and integration tests
-4. THE Backend SHALL include database-specific test configurations
-5. THE System SHALL provide test data fixtures for MariaDB testing
+1. THE Backend SHALL use Testcontainers MariaDB 10.11 for integration tests with isolated database instances
+2. WHEN tests are executed, THE System SHALL use completely isolated MariaDB containers for each test class
+3. THE Backend SHALL maintain all existing unit tests and integration tests with 100% pass rate
+4. THE Backend SHALL include MariaDB-specific test configurations in application-test.yml
+5. THE System SHALL provide test data fixtures and initialization scripts specifically designed for MariaDB testing
