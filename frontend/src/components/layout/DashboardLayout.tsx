@@ -14,7 +14,8 @@ import {
   Users,
   UserCircle2,
   Bell,
-  Home
+  Home,
+  CheckCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
@@ -78,6 +79,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
       case "super":
         return [
           { icon: Building2, label: "고객사(Tenant)", href: "/super/tenants" },
+          { icon: CheckCircle, label: "구독 승인", href: "/super/approvals" },
           { icon: CreditCard, label: "구독/결제", href: "/super/billing" },
           { icon: FileText, label: "세금계산서", href: "/super/tax" },
           { icon: Settings, label: "시스템 설정", href: "/super/settings" },

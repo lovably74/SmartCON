@@ -50,6 +50,9 @@ class SubscriptionServiceTest {
     @Mock
     private TenantRepository tenantRepository;
     
+    @Mock
+    private com.smartcon.domain.subscription.service.NotificationService notificationService;
+    
     @InjectMocks
     private SubscriptionService subscriptionService;
     

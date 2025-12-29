@@ -109,3 +109,85 @@ export function useUpdateTenantStatus() {
     },
   });
 }
+
+// 승인 대기 중인 구독 목록 조회
+export function usePendingApprovals(params?: {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: string;
+}) {
+  return useQuery({
+    queryKey: ['admin', 'subscriptions', 'pending', params],
+    queryFn: async () => {
+      const response = await apiClient.getPendingApprovals(params);
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+  });
+}
+
+// 구독 승인
+export function useApproveSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
+      const response = await apiClient.approveSubscription(subscriptionId, { reason });
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      // 승인 관련 쿼리들을 무효화하여 새로고침
+      queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
+      toast.success('구독이 성공적으로 승인되었습니다.');
+    },
+    onError: (error: Error) => {
+      toast.error(`구독 승인 실패: ${error.message}`);
+    },
+  });
+}
+
+// 구독 거부
+export function useRejectSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
+      const response = await apiClient.rejectSubscription(subscriptionId, { reason });
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      // 승인 관련 쿼리들을 무효화하여 새로고침
+      queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
+      toast.success('구독이 거부되었습니다.');
+    },
+    onError: (error: Error) => {
+      toast.error(`구독 거부 실패: ${error.message}`);
+    },
+  });
+}
+
+// 승인 이력 조회
+export function useApprovalHistory(subscriptionId: number) {
+  return useQuery({
+    queryKey: ['admin', 'subscriptions', subscriptionId, 'history'],
+    queryFn: async () => {
+      const response = await apiClient.getApprovalHistory(subscriptionId);
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+    enabled: !!subscriptionId,
+  });
+}

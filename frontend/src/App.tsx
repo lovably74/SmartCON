@@ -29,6 +29,7 @@ import ContractsWorker from "./pages/worker/ContractsWorker";
 import ProfileWorker from "./pages/worker/ProfileWorker";
 import DashboardSuper from "./pages/super/DashboardSuper";
 import TenantsSuper from "./pages/super/TenantsSuper";
+import ApprovalsSuper from "./pages/super/ApprovalsSuper";
 import BillingSuper from "./pages/super/BillingSuper";
 import TaxSuper from "./pages/super/TaxSuper";
 import SettingsSuper from "./pages/super/SettingsSuper";
@@ -71,6 +72,7 @@ function Router() {
       {/* Super Admin Routes */}
       <Route path="/super/dashboard" component={DashboardSuper} />
       <Route path="/super/tenants" component={TenantsSuper} />
+      <Route path="/super/approvals" component={ApprovalsSuper} />
       <Route path="/super/billing" component={BillingSuper} />
       <Route path="/super/tax" component={TaxSuper} />
       <Route path="/super/settings" component={SettingsSuper} />

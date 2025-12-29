@@ -94,6 +94,41 @@ export interface FailedPayment {
   createdAt: string;
 }
 
+// 구독 승인 관련 타입들
+export interface SubscriptionApproval {
+  id: number;
+  subscriptionId: number;
+  tenantId: number;
+  companyName: string;
+  businessNo: string;
+  representativeName: string;
+  planId: string;
+  planName: string;
+  monthlyAmount: number;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'AUTO_APPROVED';
+  requestedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectionReason?: string;
+  paymentMethod: string;
+  isVerifiedTenant: boolean;
+}
+
+export interface ApprovalRequest {
+  reason: string;
+}
+
+export interface ApprovalHistory {
+  id: number;
+  subscriptionId: number;
+  adminName: string;
+  fromStatus: string;
+  toStatus: string;
+  reason?: string;
+  action: 'APPROVE' | 'REJECT' | 'SUSPEND' | 'TERMINATE' | 'REACTIVATE';
+  processedAt: string;
+}
+
 class ApiClient {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -168,6 +203,47 @@ class ApiClient {
   // 시스템 상태 확인
   async getSystemHealth(): Promise<ApiResponse<string>> {
     return this.request<string>('/api/v1/admin/system/health');
+  }
+
+  // 승인 대기 중인 구독 목록 조회
+  async getPendingApprovals(params?: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: string;
+  }): Promise<ApiResponse<PageResponse<SubscriptionApproval>>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params?.size !== undefined) searchParams.append('size', params.size.toString());
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortDir) searchParams.append('sortDir', params.sortDir);
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/admin/subscriptions/pending${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PageResponse<SubscriptionApproval>>(endpoint);
+  }
+
+  // 구독 승인
+  async approveSubscription(subscriptionId: number, request: ApprovalRequest): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/admin/subscriptions/${subscriptionId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // 구독 거부
+  async rejectSubscription(subscriptionId: number, request: ApprovalRequest): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/admin/subscriptions/${subscriptionId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // 승인 이력 조회
+  async getApprovalHistory(subscriptionId: number): Promise<ApiResponse<ApprovalHistory[]>> {
+    return this.request<ApprovalHistory[]>(`/api/v1/admin/subscriptions/${subscriptionId}/history`);
   }
 }
 
