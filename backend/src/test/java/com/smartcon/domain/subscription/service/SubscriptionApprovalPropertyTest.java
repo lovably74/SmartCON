@@ -475,6 +475,9 @@ class SubscriptionApprovalPropertyTest {
         @Override public boolean existsActiveByTenant(com.smartcon.domain.tenant.entity.Tenant tenant) { return false; }
         @Override public List<Subscription> findPendingSubscriptionsOlderThan(LocalDateTime cutoffTime) { return List.of(); }
         @Override public org.springframework.data.domain.Page<Subscription> findByStatusOrderByCreatedAtAsc(SubscriptionStatus status, org.springframework.data.domain.Pageable pageable) { return org.springframework.data.domain.Page.empty(); }
+        @Override public long countByStatus(SubscriptionStatus status) { return 0; }
+        @Override public long countByStatusAndCreatedAtBefore(SubscriptionStatus status, LocalDateTime createdAt) { return 0; }
+        @Override public List<Object[]> getSubscriptionExportData(SubscriptionStatus status, LocalDateTime startDate, LocalDateTime endDate) { return List.of(); }
     }
     
     /**
@@ -532,6 +535,8 @@ class SubscriptionApprovalPropertyTest {
         @Override public SubscriptionApproval findLatestBySubscriptionId(Long subscriptionId) { return null; }
         @Override public List<Object[]> getApprovalStatsByAdmin(LocalDateTime startDate, LocalDateTime endDate) { return List.of(); }
         @Override public List<Object[]> getApprovalStatsByAction(LocalDateTime startDate, LocalDateTime endDate) { return List.of(); }
+        @Override public long countByAutoApproved(boolean autoApproved) { return 0; }
+        @Override public List<Object[]> getAverageProcessingTime() { return List.of(); }
     }
     
     /**

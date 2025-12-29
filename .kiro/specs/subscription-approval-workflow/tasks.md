@@ -89,18 +89,18 @@
   - API 응답 형식 테스트
   - _Requirements: 1.3, 1.4, 1.5_
 
-- [ ] 5.3 기존 SuperAdminController 확장
+- [x] 5.3 기존 SuperAdminController 확장
   - 승인 대시보드 통계 API 추가
   - 구독 필터링 및 검색 API 확장
   - 데이터 내보내기 API 구현
   - _Requirements: 4.1, 4.3, 4.4_
 
-- [ ] 5.4 Write property test for dashboard and filtering
+- [x] 5.4 Write property test for dashboard and filtering
   - **Property 14: Dashboard Subscription Counts**
   - **Property 16: Subscription Filtering**
   - **Validates: Requirements 4.1, 4.3**
 
-- [ ] 6. Checkpoint - 백엔드 핵심 기능 검증
+- [x] 6. Checkpoint - 백엔드 핵심 기능 검증
   - 모든 백엔드 테스트 실행 및 통과 확인
   - API 엔드포인트 동작 검증
   - 데이터베이스 스키마 및 마이그레이션 검증

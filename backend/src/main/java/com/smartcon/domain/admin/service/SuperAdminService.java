@@ -1,10 +1,15 @@
 package com.smartcon.domain.admin.service;
 
+import com.smartcon.domain.admin.dto.ApprovalStatsDto;
 import com.smartcon.domain.admin.dto.BillingStatsDto;
 import com.smartcon.domain.admin.dto.DashboardStatsDto;
+import com.smartcon.domain.admin.dto.SubscriptionExportDto;
 import com.smartcon.domain.admin.dto.TenantSummaryDto;
 import com.smartcon.domain.billing.entity.BillingRecord;
 import com.smartcon.domain.billing.repository.BillingRecordRepository;
+import com.smartcon.domain.subscription.entity.SubscriptionStatus;
+import com.smartcon.domain.subscription.repository.SubscriptionApprovalRepository;
+import com.smartcon.domain.subscription.repository.SubscriptionRepository;
 import com.smartcon.domain.tenant.entity.Tenant;
 import com.smartcon.domain.tenant.repository.TenantRepository;
 import com.smartcon.domain.user.repository.UserRepository;
@@ -16,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +40,8 @@ public class SuperAdminService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final BillingRecordRepository billingRecordRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionApprovalRepository subscriptionApprovalRepository;
 
     /**
      * 대시보드 통계 정보 조회
@@ -193,6 +202,114 @@ public class SuperAdminService {
                     long userCount = userRepository.countByTenantId(tenant.getId());
                     return TenantSummaryDto.from(tenant, userCount);
                 })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 승인 대시보드 통계 정보 조회
+     */
+    public ApprovalStatsDto getApprovalStats() {
+        log.debug("승인 대시보드 통계 정보 조회 시작");
+
+        ApprovalStatsDto stats = new ApprovalStatsDto();
+        
+        // 구독 상태별 통계
+        stats.setTotalSubscriptions(subscriptionRepository.count());
+        stats.setPendingApprovals(subscriptionRepository.countByStatus(SubscriptionStatus.PENDING_APPROVAL));
+        stats.setApprovedSubscriptions(subscriptionRepository.countByStatus(SubscriptionStatus.ACTIVE));
+        stats.setRejectedSubscriptions(subscriptionRepository.countByStatus(SubscriptionStatus.REJECTED));
+        stats.setSuspendedSubscriptions(subscriptionRepository.countByStatus(SubscriptionStatus.SUSPENDED));
+        stats.setTerminatedSubscriptions(subscriptionRepository.countByStatus(SubscriptionStatus.TERMINATED));
+        
+        // 자동 승인 통계
+        long autoApprovedCount = subscriptionApprovalRepository.countByAutoApproved(true);
+        long manualApprovalCount = subscriptionApprovalRepository.countByAutoApproved(false);
+        stats.setAutoApprovedCount(autoApprovedCount);
+        stats.setManualApprovalCount(manualApprovalCount);
+        
+        // 자동 승인 비율 계산
+        long totalApprovals = autoApprovedCount + manualApprovalCount;
+        if (totalApprovals > 0) {
+            double autoApprovalRate = (double) autoApprovedCount / totalApprovals * 100;
+            stats.setAutoApprovalRate(Math.round(autoApprovalRate * 100.0) / 100.0);
+        } else {
+            stats.setAutoApprovalRate(0.0);
+        }
+        
+        // 평균 처리 시간 계산 (승인된 구독들의 평균 처리 시간)
+        List<Object[]> processingTimes = subscriptionApprovalRepository.getAverageProcessingTime();
+        if (!processingTimes.isEmpty() && processingTimes.get(0)[0] != null) {
+            Double avgHours = (Double) processingTimes.get(0)[0];
+            stats.setAverageProcessingHours(Math.round(avgHours * 100.0) / 100.0);
+        } else {
+            stats.setAverageProcessingHours(0.0);
+        }
+        
+        // 3일 이상 대기 중인 구독 수
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minus(3, ChronoUnit.DAYS);
+        stats.setPendingOverThreeDays(subscriptionRepository.countByStatusAndCreatedAtBefore(
+                SubscriptionStatus.PENDING_APPROVAL, threeDaysAgo));
+
+        log.debug("승인 대시보드 통계 정보 조회 완료 - 총 구독: {}, 대기 중: {}", 
+                stats.getTotalSubscriptions(), stats.getPendingApprovals());
+        return stats;
+    }
+
+    /**
+     * 구독 목록 조회 (페이징, 검색, 필터링)
+     */
+    public Page<SubscriptionExportDto> getSubscriptions(
+            String search, 
+            SubscriptionStatus status, 
+            LocalDateTime startDate, 
+            LocalDateTime endDate, 
+            Pageable pageable) {
+        log.debug("구독 목록 조회 시작 - 검색어: {}, 상태: {}, 기간: {} ~ {}", search, status, startDate, endDate);
+
+        // 전체 데이터 조회
+        List<SubscriptionExportDto> allData = exportSubscriptionData(status, startDate, endDate);
+        
+        // 검색어 필터링 (테넌트명 기준)
+        if (search != null && !search.trim().isEmpty()) {
+            allData = allData.stream()
+                    .filter(dto -> dto.getTenantName().toLowerCase().contains(search.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        
+        // 페이지네이션 처리
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allData.size());
+        
+        List<SubscriptionExportDto> pageData = allData.subList(start, end);
+        
+        return new org.springframework.data.domain.PageImpl<>(pageData, pageable, allData.size());
+    }
+
+    /**
+     * 구독 데이터 내보내기
+     */
+    public List<SubscriptionExportDto> exportSubscriptionData(
+            SubscriptionStatus status, 
+            LocalDateTime startDate, 
+            LocalDateTime endDate) {
+        log.debug("구독 데이터 내보내기 시작 - 상태: {}, 기간: {} ~ {}", status, startDate, endDate);
+
+        List<Object[]> subscriptionData = subscriptionRepository.getSubscriptionExportData(status, startDate, endDate);
+        
+        return subscriptionData.stream()
+                .map(data -> SubscriptionExportDto.builder()
+                        .subscriptionId((Long) data[0])
+                        .tenantName((String) data[1])
+                        .planName((String) data[2])
+                        .status((SubscriptionStatus) data[3])
+                        .monthlyFee((BigDecimal) data[4])
+                        .createdAt((LocalDateTime) data[5])
+                        .approvedAt((LocalDateTime) data[6])
+                        .lastPaymentAt((LocalDateTime) data[7])
+                        .approvalReason((String) data[8])
+                        .adminName((String) data[9])
+                        .autoApproved((Boolean) data[10])
+                        .build())
                 .collect(Collectors.toList());
     }
 }

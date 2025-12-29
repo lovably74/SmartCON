@@ -78,4 +78,18 @@ public interface SubscriptionApprovalRepository extends JpaRepository<Subscripti
     List<Object[]> getApprovalStatsByAction(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+    
+    /**
+     * 자동 승인 여부별 승인 수 조회
+     */
+    long countByAutoApproved(boolean autoApproved);
+    
+    /**
+     * 평균 처리 시간 조회 (시간 단위)
+     */
+    @Query("SELECT AVG(TIMESTAMPDIFF(HOUR, s.createdAt, sa.processedAt)) " +
+           "FROM SubscriptionApproval sa " +
+           "JOIN Subscription s ON s.id = sa.subscriptionId " +
+           "WHERE sa.action IN ('APPROVE', 'AUTO_APPROVE')")
+    List<Object[]> getAverageProcessingTime();
 }

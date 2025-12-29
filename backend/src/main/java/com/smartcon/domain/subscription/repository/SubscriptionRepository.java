@@ -70,4 +70,34 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
      */
     org.springframework.data.domain.Page<Subscription> findByStatusOrderByCreatedAtAsc(
         SubscriptionStatus status, org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * 특정 상태의 구독 수 조회
+     */
+    long countByStatus(SubscriptionStatus status);
+    
+    /**
+     * 특정 상태이면서 특정 시간 이전에 생성된 구독 수 조회
+     */
+    long countByStatusAndCreatedAtBefore(SubscriptionStatus status, java.time.LocalDateTime createdAt);
+    
+    /**
+     * 구독 데이터 내보내기용 쿼리
+     */
+    @Query("SELECT s.id, t.companyName, sp.name, s.status, s.monthlyFee, s.createdAt, " +
+           "sa.processedAt, p.createdAt, sa.reason, u.name, sa.autoApproved " +
+           "FROM Subscription s " +
+           "LEFT JOIN s.tenant t " +
+           "LEFT JOIN s.plan sp " +
+           "LEFT JOIN SubscriptionApproval sa ON sa.subscriptionId = s.id " +
+           "LEFT JOIN sa.admin u " +
+           "LEFT JOIN Payment p ON p.subscriptionId = s.id " +
+           "WHERE (:status IS NULL OR s.status = :status) " +
+           "AND (:startDate IS NULL OR s.createdAt >= :startDate) " +
+           "AND (:endDate IS NULL OR s.createdAt <= :endDate) " +
+           "ORDER BY s.createdAt DESC")
+    List<Object[]> getSubscriptionExportData(
+            @Param("status") SubscriptionStatus status,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate);
 }
