@@ -36,6 +36,12 @@ export interface TenantSummary {
   userCount: number;
   createdAt: string;
   lastLoginAt?: string;
+  // 구독 관련 정보 추가
+  subscriptionId?: number;
+  subscriptionStatus?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'AUTO_APPROVED' | 'ACTIVE' | 'SUSPENDED' | 'TERMINATED';
+  monthlyAmount?: number;
+  approvedAt?: string;
+  approvedBy?: string;
 }
 
 export interface PageResponse<T> {
@@ -244,6 +250,22 @@ class ApiClient {
   // 승인 이력 조회
   async getApprovalHistory(subscriptionId: number): Promise<ApiResponse<ApprovalHistory[]>> {
     return this.request<ApprovalHistory[]>(`/api/v1/admin/subscriptions/${subscriptionId}/history`);
+  }
+
+  // 구독 중지
+  async suspendSubscription(subscriptionId: number, request: ApprovalRequest): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/admin/subscriptions/${subscriptionId}/suspend`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // 구독 종료
+  async terminateSubscription(subscriptionId: number, request: ApprovalRequest): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/admin/subscriptions/${subscriptionId}/terminate`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   }
 }
 

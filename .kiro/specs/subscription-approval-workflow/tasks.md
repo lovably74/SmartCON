@@ -125,20 +125,20 @@
   - 폼 유효성 검사 테스트
   - _Requirements: 1.4, 1.5_
 
-- [ ] 8. 구독 관리 대시보드 확장
-- [ ] 8.1 기존 TenantsSuper 컴포넌트 확장
+- [x] 8. 구독 관리 대시보드 확장
+- [x] 8.1 기존 TenantsSuper 컴포넌트 확장
   - 구독 상태별 필터링 기능 추가
   - 중지/종료 액션 버튼 추가
   - 승인 이력 표시 기능 구현
   - _Requirements: 3.1, 3.2, 5.2_
 
-- [ ] 8.2 구독 상세 정보 모달 구현
+- [x] 8.2 구독 상세 정보 모달 구현
   - 구독 상세 정보 표시 컴포넌트
   - 승인 이력 타임라인 구현
   - 상태 변경 액션 인터페이스
   - _Requirements: 4.2, 4.5, 5.2_
 
-- [ ] 8.3 Write unit tests for subscription management components
+- [x] 8.3 Write unit tests for subscription management components
   - 상태 표시 테스트
   - 액션 버튼 동작 테스트
   - 모달 다이얼로그 테스트

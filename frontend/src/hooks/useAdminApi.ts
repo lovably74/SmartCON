@@ -191,3 +191,53 @@ export function useApprovalHistory(subscriptionId: number) {
     enabled: !!subscriptionId,
   });
 }
+
+// 구독 중지
+export function useSuspendSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
+      const response = await apiClient.suspendSubscription(subscriptionId, { reason });
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 새로고침
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
+      toast.success('구독이 중지되었습니다.');
+    },
+    onError: (error: Error) => {
+      toast.error(`구독 중지 실패: ${error.message}`);
+    },
+  });
+}
+
+// 구독 종료
+export function useTerminateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
+      const response = await apiClient.terminateSubscription(subscriptionId, { reason });
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 새로고침
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
+      toast.success('구독이 종료되었습니다.');
+    },
+    onError: (error: Error) => {
+      toast.error(`구독 종료 실패: ${error.message}`);
+    },
+  });
+}
