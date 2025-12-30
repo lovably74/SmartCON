@@ -144,21 +144,21 @@
   - 모달 다이얼로그 테스트
   - _Requirements: 3.1, 3.2_
 
-- [ ] 9. 테넌트 사용자 인터페이스 구현
-- [ ] 9.1 구독 상태 표시 컴포넌트 구현
+- [-] 9. 테넌트 사용자 인터페이스 구현
+- [x] 9.1 구독 상태 표시 컴포넌트 구현
   - 상태별 메시지 및 안내 표시
   - 재신청 버튼 및 연락처 정보 표시
   - 상태 아이콘 및 시각적 피드백 구현
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 9.2 Write property test for tenant UI behavior
+- [x] 9.2 Write property test for tenant UI behavior
   - **Property 23: Pending Status UI Behavior**
   - **Property 24: Rejected Status UI Behavior**
   - **Property 25: Suspended Status UI Behavior**
   - **Property 26: Terminated Status UI Behavior**
   - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
-- [ ] 9.3 기존 SubscriptionHQ 컴포넌트 수정
+- [-] 9.3 기존 SubscriptionHQ 컴포넌트 수정
   - 구독 신청 시 승인 대기 상태 안내 추가
   - 구독 이력에 승인 정보 표시
   - 상태별 액션 버튼 조건부 표시

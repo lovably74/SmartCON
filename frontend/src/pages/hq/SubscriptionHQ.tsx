@@ -13,8 +13,11 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  History,
+  Info
 } from 'lucide-react';
+import { SubscriptionStatusDisplay, SubscriptionStatusIcon } from '@/components/subscription';
 
 /**
  * 본사 관리자 구독 관리 페이지
@@ -33,12 +36,28 @@ const SubscriptionHQ: React.FC = () => {
       maxUsers: 200,
       maxStorageGb: 50
     },
-    status: 'ACTIVE',
+    status: 'PENDING_APPROVAL', // 승인 대기 상태로 변경
     startDate: '2024-01-01',
     nextBillingDate: '2024-02-01',
     billingCycle: 'MONTHLY',
     isTrial: false,
-    autoRenewal: true
+    autoRenewal: true,
+    // 승인 관련 정보 추가
+    approvalRequestedAt: '2024-01-15T10:30:00',
+    rejectionReason: null,
+    suspensionReason: null,
+    terminationReason: null,
+    approvalHistory: [
+      {
+        id: 1,
+        action: 'REQUEST',
+        adminName: null,
+        fromStatus: null,
+        toStatus: 'PENDING_APPROVAL',
+        reason: '구독 신청',
+        processedAt: '2024-01-15T10:30:00'
+      }
+    ]
   };
 
   const usage = {
@@ -106,16 +125,8 @@ const SubscriptionHQ: React.FC = () => {
   ];
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />활성</Badge>;
-      case 'SUSPENDED':
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />일시중지</Badge>;
-      case 'CANCELLED':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />해지</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+    // 새로운 SubscriptionStatusIcon 컴포넌트 사용
+    return <SubscriptionStatusIcon status={status as any} />;
   };
 
   const getPaymentStatusBadge = (status: string) => {
@@ -142,6 +153,24 @@ const SubscriptionHQ: React.FC = () => {
     return new Date(dateString).toLocaleDateString('ko-KR');
   };
 
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('ko-KR');
+  };
+
+  // 승인 대기 상태 처리 함수
+  const handleReapply = () => {
+    // 재신청 로직 구현
+    console.log('재신청 요청');
+  };
+
+  const handleNewSubscription = () => {
+    // 새 구독 신청 로직 구현
+    console.log('새 구독 신청');
+  };
+
+  // 구독 상태가 비정상인 경우 상태 표시 컴포넌트 렌더링
+  const shouldShowStatusDisplay = !['ACTIVE', 'CANCELLED', 'EXPIRED'].includes(currentSubscription.status);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -151,12 +180,25 @@ const SubscriptionHQ: React.FC = () => {
         </div>
       </div>
 
+      {/* 구독 상태 표시 컴포넌트 */}
+      {shouldShowStatusDisplay && (
+        <SubscriptionStatusDisplay
+          status={currentSubscription.status as any}
+          rejectionReason={currentSubscription.rejectionReason}
+          suspensionReason={currentSubscription.suspensionReason}
+          terminationReason={currentSubscription.terminationReason}
+          onReapply={handleReapply}
+          onNewSubscription={handleNewSubscription}
+        />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">구독 현황</TabsTrigger>
           <TabsTrigger value="usage">사용량 모니터링</TabsTrigger>
           <TabsTrigger value="plans">요금제 변경</TabsTrigger>
           <TabsTrigger value="billing">결제 관리</TabsTrigger>
+          <TabsTrigger value="history">승인 이력</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -185,6 +227,11 @@ const SubscriptionHQ: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {currentSubscription.isTrial ? '체험판' : '정식 구독'}
+                  {currentSubscription.approvalRequestedAt && (
+                    <span className="block mt-1">
+                      신청일: {formatDate(currentSubscription.approvalRequestedAt)}
+                    </span>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -237,8 +284,24 @@ const SubscriptionHQ: React.FC = () => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline">요금제 변경</Button>
-                <Button variant="outline">구독 해지</Button>
+                <Button 
+                  variant="outline"
+                  disabled={currentSubscription.status !== 'ACTIVE'}
+                >
+                  요금제 변경
+                </Button>
+                <Button 
+                  variant="outline"
+                  disabled={currentSubscription.status !== 'ACTIVE'}
+                >
+                  구독 해지
+                </Button>
+                {currentSubscription.status === 'PENDING_APPROVAL' && (
+                  <Button variant="outline" disabled>
+                    <Info className="w-4 h-4 mr-2" />
+                    승인 대기 중
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -452,6 +515,68 @@ const SubscriptionHQ: React.FC = () => {
                 <Button variant="outline" className="w-full">
                   새 결제 수단 추가
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <History className="h-5 w-5" />
+                <span>승인 이력</span>
+              </CardTitle>
+              <CardDescription>구독 상태 변경 이력을 확인하세요</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {currentSubscription.approvalHistory.map((history, index) => (
+                  <div key={history.id} className="flex items-start space-x-4 p-4 border rounded-lg">
+                    <div className="flex-shrink-0">
+                      {history.action === 'REQUEST' && <Clock className="h-5 w-5 text-yellow-500" />}
+                      {history.action === 'APPROVE' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {history.action === 'REJECT' && <XCircle className="h-5 w-5 text-red-500" />}
+                      {history.action === 'SUSPEND' && <AlertTriangle className="h-5 w-5 text-orange-500" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">
+                          {history.action === 'REQUEST' && '구독 신청'}
+                          {history.action === 'APPROVE' && '구독 승인'}
+                          {history.action === 'REJECT' && '구독 거부'}
+                          {history.action === 'SUSPEND' && '구독 중지'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDateTime(history.processedAt)}
+                        </div>
+                      </div>
+                      {history.adminName && (
+                        <div className="text-sm text-muted-foreground">
+                          처리자: {history.adminName}
+                        </div>
+                      )}
+                      {history.fromStatus && history.toStatus && (
+                        <div className="flex items-center space-x-2 text-sm">
+                          <SubscriptionStatusIcon status={history.fromStatus as any} size="sm" />
+                          <span>→</span>
+                          <SubscriptionStatusIcon status={history.toStatus as any} size="sm" />
+                        </div>
+                      )}
+                      {history.reason && (
+                        <div className="text-sm text-muted-foreground bg-gray-50 p-2 rounded">
+                          {history.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {currentSubscription.approvalHistory.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    승인 이력이 없습니다.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
