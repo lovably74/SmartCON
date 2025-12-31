@@ -1,197 +1,323 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileCheck, FileText, Search, Send, Download, Filter } from "lucide-react";
-import { ResponsiveTable } from "@/components/ui/responsive-table";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  FileText,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Users
+} from "lucide-react";
+import { useState } from "react";
 
 export default function ContractsHQ() {
-  const [selectedContract, setSelectedContract] = useState<any>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // Mock Data
   const contracts = [
-    { id: 1, title: "2025년 표준근로계약서", worker: "홍길동", site: "강남 테헤란로", date: "2025.12.18", status: "서명완료" },
-    { id: 2, title: "개인정보 수집 이용 동의서", worker: "김철수", site: "강남 테헤란로", date: "2025.12.18", status: "서명대기" },
-    { id: 3, title: "안전보건교육 이수 확인서", worker: "이영희", site: "판교 데이터센터", date: "2025.12.17", status: "서명완료" },
-    { id: 4, title: "2025년 표준근로계약서", worker: "박민수", site: "부산 에코델타", date: "2025.12.17", status: "만료임박" },
-    { id: 5, title: "보안 서약서", worker: "Zhang Wei", site: "인천공항", date: "2025.12.16", status: "서명완료" },
-    { id: 6, title: "2025년 표준근로계약서", worker: "최준호", site: "세종 스마트시티", date: "2025.12.16", status: "서명완료" },
-    { id: 7, title: "개인정보 수집 이용 동의서", worker: "정다은", site: "대구 수성구", date: "2025.12.15", status: "서명대기" },
-    { id: 8, title: "안전보건교육 이수 확인서", worker: "Nguyen Van", site: "광주 첨단지구", date: "2025.12.15", status: "서명완료" },
-    { id: 9, title: "2025년 표준근로계약서", worker: "강호동", site: "대전 사이언스", date: "2025.12.14", status: "서명완료" },
-    { id: 10, title: "보안 서약서", worker: "유재석", site: "울산 석유화학", date: "2025.12.14", status: "서명완료" },
+    {
+      id: 1,
+      contractNumber: "CON-2025-001",
+      workerName: "김철수",
+      site: "강남 테헤란로 오피스 신축공사",
+      team: "철근팀",
+      startDate: "2025-01-01",
+      endDate: "2025-06-30",
+      dailyWage: 250000,
+      status: "active",
+      signedDate: "2024-12-28"
+    },
+    {
+      id: 2,
+      contractNumber: "CON-2025-002",
+      workerName: "이영희",
+      site: "판교 데이터센터 건립공사",
+      team: "콘크리트팀",
+      startDate: "2025-01-01",
+      endDate: "2025-08-31",
+      dailyWage: 230000,
+      status: "active",
+      signedDate: "2024-12-29"
+    },
+    {
+      id: 3,
+      contractNumber: "CON-2025-003",
+      workerName: "박민수",
+      site: "강남 테헤란로 오피스 신축공사",
+      team: "철근팀",
+      startDate: "2025-02-01",
+      endDate: "2025-07-31",
+      dailyWage: 220000,
+      status: "pending",
+      signedDate: null
+    },
+    {
+      id: 4,
+      contractNumber: "CON-2024-156",
+      workerName: "정수진",
+      site: "부산 에코델타시티 조성공사",
+      team: "전기팀",
+      startDate: "2024-06-01",
+      endDate: "2024-12-31",
+      dailyWage: 280000,
+      status: "completed",
+      signedDate: "2024-05-25"
+    },
+    {
+      id: 5,
+      contractNumber: "CON-2025-004",
+      workerName: "최동호",
+      site: "인천공항 제2터미널 확장공사",
+      team: "배관팀",
+      startDate: "2025-01-15",
+      endDate: "2025-12-31",
+      dailyWage: 260000,
+      status: "draft",
+      signedDate: null
+    }
   ];
 
-  const handleRowClick = (contract: any) => {
-    setSelectedContract(contract);
-    setIsDetailOpen(true);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-green-100 text-green-700";
+      case "completed": return "bg-blue-100 text-blue-700";
+      case "pending": return "bg-orange-100 text-orange-700";
+      case "draft": return "bg-gray-100 text-gray-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
   };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active": return "진행중";
+      case "completed": return "완료";
+      case "pending": return "서명 대기";
+      case "draft": return "작성중";
+      default: return "알 수 없음";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "active": return <CheckCircle2 className="h-4 w-4" />;
+      case "completed": return <CheckCircle2 className="h-4 w-4" />;
+      case "pending": return <Clock className="h-4 w-4" />;
+      case "draft": return <FileText className="h-4 w-4" />;
+      default: return <AlertTriangle className="h-4 w-4" />;
+    }
+  };
+
+  const filteredContracts = contracts.filter(contract =>
+    contract.workerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contract.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contract.contractNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <DashboardLayout role="hq">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">계약 관리</h2>
-            <p className="text-muted-foreground">전자 근로계약 및 각종 동의서 현황을 관리합니다.</p>
-          </div>
-          <Button className="w-full sm:w-auto">
-            <Send className="mr-2 h-4 w-4" /> 계약서 일괄 발송
-          </Button>
+        {/* 계약 통계 */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">총 계약</p>
+                <div className="text-3xl font-bold mt-2">{contracts.length}</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <FileText className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">진행중</p>
+                <div className="text-3xl font-bold text-green-600 mt-2">
+                  {contracts.filter(c => c.status === "active").length}
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">서명 대기</p>
+                <div className="text-3xl font-bold text-orange-600 mt-2">
+                  {contracts.filter(c => c.status === "pending").length}
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                <Clock className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">완료</p>
+                <div className="text-3xl font-bold text-purple-600 mt-2">
+                  {contracts.filter(c => c.status === "completed").length}
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <Users className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">체결 완료</CardTitle>
-              <FileCheck className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,245건</div>
-              <p className="text-xs text-muted-foreground mt-1">전체 대상의 92%</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">서명 대기</CardTitle>
-              <FileText className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">45건</div>
-              <p className="text-xs text-muted-foreground mt-1">재발송 필요</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">만료 임박</CardTitle>
-              <FileText className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12건</div>
-              <p className="text-xs text-muted-foreground mt-1">30일 이내 만료</p>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* 계약 관리 */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <CardTitle>계약 문서 목록</CardTitle>
-              <div className="flex w-full sm:max-w-md items-center space-x-2">
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <Input placeholder="문서명 또는 노무자명 검색" />
-                <Button size="icon" variant="ghost">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              전자근로계약 관리
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveTable
-              data={contracts}
-              keyExtractor={(item) => item.id}
-              onRowClick={handleRowClick}
-              columns={[
-                {
-                  header: "문서명",
-                  cell: (item) => (
-                    <div className="flex items-center gap-2 font-medium">
-                      <FileText className="h-4 w-4 text-muted-foreground hidden sm:block" />
-                      {item.title}
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="노무자명, 현장명, 계약번호로 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                필터
+              </Button>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                엑셀 다운로드
+              </Button>
+            </div>
+
+            {/* 계약 목록 */}
+            <div className="space-y-4">
+              {filteredContracts.map((contract) => (
+                <div key={contract.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                          {contract.workerName.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{contract.contractNumber}</h3>
+                          <p className="text-sm text-muted-foreground">{contract.workerName}</p>
+                        </div>
+                        <Badge className={getStatusColor(contract.status)}>
+                          {getStatusIcon(contract.status)}
+                          <span className="ml-1">{getStatusText(contract.status)}</span>
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">현장</div>
+                          <div className="font-medium">{contract.site}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">팀</div>
+                          <div className="font-medium">{contract.team}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">계약 기간</div>
+                          <div className="font-medium">{contract.startDate} ~ {contract.endDate}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">일당</div>
+                          <div className="font-medium text-green-600">₩{contract.dailyWage.toLocaleString()}</div>
+                        </div>
+                      </div>
+
+                      {contract.signedDate && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          <span className="font-medium">서명일:</span> {contract.signedDate}
+                        </div>
+                      )}
                     </div>
-                  ),
-                },
-                {
-                  header: "노무자",
-                  accessorKey: "worker",
-                },
-                {
-                  header: "현장",
-                  accessorKey: "site",
-                  className: "hidden md:table-cell",
-                },
-                {
-                  header: "발송일",
-                  accessorKey: "date",
-                  className: "hidden sm:table-cell",
-                },
-                {
-                  header: "상태",
-                  cell: (item) => (
-                    <Badge variant={
-                      item.status === "서명완료" ? "outline" :
-                      item.status === "서명대기" ? "secondary" : "destructive"
-                    } className={
-                      item.status === "서명완료" ? "text-green-600 border-green-200 bg-green-50" : ""
-                    }>
-                      {item.status}
-                    </Badge>
-                  ),
-                },
-              ]}
-            />
+
+                    <div className="flex gap-2 ml-4">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        상세보기
+                      </Button>
+
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-1" />
+                        다운로드
+                      </Button>
+
+                      {contract.status === "draft" && (
+                        <Button size="sm">
+                          편집
+                        </Button>
+                      )}
+
+                      {contract.status === "pending" && (
+                        <Button size="sm">
+                          알림 발송
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredContracts.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">검색 결과가 없습니다.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>계약 상세 정보</DialogTitle>
-            </DialogHeader>
-            {selectedContract && (
-              <div className="grid gap-6 py-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold">{selectedContract.title}</h3>
-                    <Badge variant={
-                      selectedContract.status === "서명완료" ? "outline" :
-                      selectedContract.status === "서명대기" ? "secondary" : "destructive"
-                    } className={
-                      selectedContract.status === "서명완료" ? "text-green-600 border-green-200 bg-green-50" : ""
-                    }>
-                      {selectedContract.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground">근로자</span>
-                      <span className="font-medium">{selectedContract.worker}</span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground">현장</span>
-                      <span>{selectedContract.site}</span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground">발송일자</span>
-                      <span>{selectedContract.date}</span>
-                    </div>
-                  </div>
-                  <div className="border rounded-md p-4 bg-muted/50 h-40 flex items-center justify-center text-muted-foreground">
-                    계약서 미리보기 영역
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDetailOpen(false)}>닫기</Button>
-                  <Button>
-                    <Download className="mr-2 h-4 w-4" /> PDF 다운로드
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* 계약 관리 액션 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>계약 관리</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">신규 계약 작성</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Download className="h-6 w-6" />
+                <span className="text-sm">계약서 템플릿</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <CheckCircle2 className="h-6 w-6" />
+                <span className="text-sm">일괄 승인</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <AlertTriangle className="h-6 w-6" />
+                <span className="text-sm">만료 예정 계약</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
 }
-

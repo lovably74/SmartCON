@@ -25,6 +25,18 @@ test.describe('구독 승인 워크플로우 E2E 테스트', () => {
     await page.goto('/');
   });
 
+  test('기본 페이지 로딩 테스트', async ({ page }) => {
+    // Given: 메인 페이지 접속
+    await page.goto('/');
+    
+    // Then: 페이지가 정상적으로 로드됨
+    await expect(page).toHaveTitle(/SmartCON/);
+    
+    // 기본 요소들이 표시되는지 확인
+    const body = page.locator('body');
+    await expect(body).toBeVisible();
+  });
+
   test('슈퍼관리자 구독 승인 전체 플로우', async ({ page }) => {
     // Given: 슈퍼관리자로 로그인
     await page.goto('/login');

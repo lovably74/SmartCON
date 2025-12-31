@@ -1,203 +1,319 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Filter, Plus, Search, User } from "lucide-react";
-import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+  Users,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  UserCheck,
+  UserX,
+  MapPin,
+  Phone,
+  Mail
+} from "lucide-react";
 import { useState } from "react";
 
 export default function WorkersHQ() {
-  const [selectedWorker, setSelectedWorker] = useState<any>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // Mock Data
   const workers = [
-    { id: 1, name: "홍길동", job: "형틀목공", site: "강남 테헤란로 오피스", type: "내국인", status: "출역중", phone: "010-1234-5678", birth: "1980.05.15" },
-    { id: 2, name: "김철수", job: "철근공", site: "판교 데이터센터", type: "내국인", status: "퇴근", phone: "010-2345-6789", birth: "1982.08.20" },
-    { id: 3, name: "이영희", job: "전기공", site: "부산 해운대 주상복합", type: "내국인", status: "출역중", phone: "010-3456-7890", birth: "1985.03.10" },
-    { id: 4, name: "Zhang Wei", job: "조적공", site: "인천 송도 물류센터", type: "외국인(H2)", status: "출역중", phone: "010-4567-8901", birth: "1978.11.25" },
-    { id: 5, name: "박민수", job: "배관공", site: "제주 서귀포 호텔", type: "내국인", status: "결근", phone: "010-5678-9012", birth: "1990.01.05" },
-    { id: 6, name: "최준호", job: "용접공", site: "강남 테헤란로 오피스", type: "내국인", status: "출역중", phone: "010-6789-0123", birth: "1988.07.12" },
-    { id: 7, name: "Nguyen Van", job: "비계공", site: "판교 데이터센터", type: "외국인(E9)", status: "휴가", phone: "010-7890-1234", birth: "1995.09.30" },
-    { id: 8, name: "정다은", job: "안전감시단", site: "부산 해운대 주상복합", type: "내국인", status: "출역중", phone: "010-8901-2345", birth: "1992.04.18" },
-    { id: 9, name: "강호동", job: "크레인", site: "인천 송도 물류센터", type: "내국인", status: "출역중", phone: "010-9012-3456", birth: "1975.12.25" },
-    { id: 10, name: "유재석", job: "신호수", site: "제주 서귀포 호텔", type: "내국인", status: "퇴근", phone: "010-0123-4567", birth: "1972.08.14" },
+    {
+      id: 1,
+      name: "김철수",
+      phone: "010-1234-5678",
+      email: "kim@example.com",
+      site: "강남 테헤란로 오피스 신축공사",
+      team: "철근팀",
+      role: "팀장",
+      status: "active",
+      joinDate: "2024-03-15",
+      lastAttendance: "2025-01-01",
+      totalDays: 245,
+      isFaceRegistered: true
+    },
+    {
+      id: 2,
+      name: "이영희",
+      phone: "010-2345-6789",
+      email: "lee@example.com",
+      site: "판교 데이터센터 건립공사",
+      team: "콘크리트팀",
+      role: "팀장",
+      status: "active",
+      joinDate: "2024-02-20",
+      lastAttendance: "2025-01-01",
+      totalDays: 280,
+      isFaceRegistered: true
+    },
+    {
+      id: 3,
+      name: "박민수",
+      phone: "010-3456-7890",
+      email: "park@example.com",
+      site: "강남 테헤란로 오피스 신축공사",
+      team: "철근팀",
+      role: "일반 노무자",
+      status: "active",
+      joinDate: "2024-06-01",
+      lastAttendance: "2024-12-30",
+      totalDays: 180,
+      isFaceRegistered: false
+    },
+    {
+      id: 4,
+      name: "정수진",
+      phone: "010-4567-8901",
+      email: "jung@example.com",
+      site: "부산 에코델타시티 조성공사",
+      team: "전기팀",
+      role: "팀장",
+      status: "inactive",
+      joinDate: "2023-11-10",
+      lastAttendance: "2024-12-20",
+      totalDays: 320,
+      isFaceRegistered: true
+    },
+    {
+      id: 5,
+      name: "최동호",
+      phone: "010-5678-9012",
+      email: "choi@example.com",
+      site: "인천공항 제2터미널 확장공사",
+      team: "배관팀",
+      role: "일반 노무자",
+      status: "active",
+      joinDate: "2024-08-01",
+      lastAttendance: "2025-01-01",
+      totalDays: 120,
+      isFaceRegistered: true
+    }
   ];
 
-  const handleRowClick = (worker: any) => {
-    setSelectedWorker(worker);
-    setIsDetailOpen(true);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-green-100 text-green-700";
+      case "inactive": return "bg-red-100 text-red-700";
+      case "pending": return "bg-orange-100 text-orange-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
   };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active": return "활성";
+      case "inactive": return "비활성";
+      case "pending": return "승인 대기";
+      default: return "알 수 없음";
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "팀장": return "bg-blue-100 text-blue-700";
+      case "일반 노무자": return "bg-gray-100 text-gray-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const filteredWorkers = workers.filter(worker =>
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.team.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <DashboardLayout role="hq">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">노무자 관리</h2>
-            <p className="text-muted-foreground">전체 등록된 노무자 인력 풀을 관리합니다.</p>
-          </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" /> 노무자 등록
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>신규 노무자 등록</DialogTitle>
-                <DialogDescription>
-                  새로운 노무자의 기본 정보를 입력하여 등록합니다.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">이름</Label>
-                  <Input id="name" className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">연락처</Label>
-                  <Input id="phone" className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="job" className="text-right">직종</Label>
-                  <Input id="job" className="col-span-3" />
+        {/* 노무자 통계 */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">총 노무자</p>
+                <div className="text-3xl font-bold mt-2">{workers.length}</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <Users className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">활성 노무자</p>
+                <div className="text-3xl font-bold text-green-600 mt-2">
+                  {workers.filter(w => w.status === "active").length}
                 </div>
               </div>
-              <div className="flex justify-end">
-                <Button type="submit">등록하기</Button>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <UserCheck className="h-6 w-6" />
               </div>
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">팀장</p>
+                <div className="text-3xl font-bold text-purple-600 mt-2">
+                  {workers.filter(w => w.role === "팀장").length}
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <Users className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">안면인식 등록</p>
+                <div className="text-3xl font-bold text-orange-600 mt-2">
+                  {workers.filter(w => w.isFaceRegistered).length}
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                <UserCheck className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* 노무자 관리 */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <CardTitle>노무자 목록 ({workers.length})</CardTitle>
-              <div className="flex w-full sm:max-w-md items-center space-x-2">
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <Input placeholder="이름, 직종 또는 현장 검색" />
-                <Button size="icon" variant="ghost">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              노무자 관리
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveTable
-              data={workers}
-              keyExtractor={(item) => item.id}
-              onRowClick={handleRowClick}
-              columns={[
-                {
-                  header: "이름",
-                  cell: (item) => (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.id}`} />
-                        <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{item.name}</span>
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="이름, 현장명, 팀명으로 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                필터
+              </Button>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                노무자 등록
+              </Button>
+            </div>
+
+            {/* 노무자 목록 */}
+            <div className="space-y-4">
+              {filteredWorkers.map((worker) => (
+                <div key={worker.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {worker.name.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">{worker.name}</h3>
+                          <Badge className={getStatusColor(worker.status)}>
+                            {getStatusText(worker.status)}
+                          </Badge>
+                          <Badge className={getRoleColor(worker.role)}>
+                            {worker.role}
+                          </Badge>
+                          {worker.isFaceRegistered && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              안면인식 등록
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4" />
+                            <span>{worker.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            <span>{worker.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            <span>{worker.team}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          <span className="font-medium">현장:</span> {worker.site}
+                        </div>
+                      </div>
                     </div>
-                  ),
-                },
-                {
-                  header: "직종",
-                  accessorKey: "job",
-                },
-                {
-                  header: "구분",
-                  cell: (item) => (
-                    <Badge variant="secondary" className="font-normal">
-                      {item.type}
-                    </Badge>
-                  ),
-                },
-                {
-                  header: "배정 현장",
-                  accessorKey: "site",
-                  className: "hidden md:table-cell",
-                },
-                {
-                  header: "상태",
-                  cell: (item) => (
-                    <Badge variant={
-                      item.status === "출역중" ? "default" :
-                      item.status === "퇴근" ? "secondary" : "destructive"
-                    } className={
-                      item.status === "출역중" ? "bg-green-500 hover:bg-green-600" : ""
-                    }>
-                      {item.status}
-                    </Badge>
-                  ),
-                },
-              ]}
-            />
-          </CardContent>
-        </Card>
 
-        {/* 상세 보기 다이얼로그 */}
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>노무자 상세 정보</DialogTitle>
-            </DialogHeader>
-            {selectedWorker && (
-              <div className="grid gap-6 py-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedWorker.id}`} />
-                    <AvatarFallback>{selectedWorker.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="text-xl font-bold">{selectedWorker.name}</h3>
-                    <p className="text-muted-foreground">{selectedWorker.job} | {selectedWorker.type}</p>
-                    <Badge className="mt-2">{selectedWorker.status}</Badge>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">연락처</span>
-                    <span>{selectedWorker.phone}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">생년월일</span>
-                    <span>{selectedWorker.birth}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">현재 배정 현장</span>
-                    <span>{selectedWorker.site}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground">기초안전보건교육</span>
-                    <span className="text-green-600 font-medium">이수 완료 (2023.05.10)</span>
-                  </div>
-                </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        상세보기
+                      </Button>
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDetailOpen(false)}>닫기</Button>
-                  <Button>정보 수정</Button>
+                      {worker.status === "active" ? (
+                        <Button variant="destructive" size="sm">
+                          <UserX className="h-4 w-4 mr-1" />
+                          비활성화
+                        </Button>
+                      ) : (
+                        <Button size="sm">
+                          <UserCheck className="h-4 w-4 mr-1" />
+                          활성화
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t grid md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">입사일</div>
+                      <div className="font-medium">{worker.joinDate}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">최근 출역</div>
+                      <div className="font-medium">{worker.lastAttendance}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">총 출역일</div>
+                      <div className="font-medium">{worker.totalDays}일</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">출역률</div>
+                      <div className="font-medium text-green-600">
+                        {Math.round((worker.totalDays / 300) * 100)}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {filteredWorkers.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">검색 결과가 없습니다.</p>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
 }
-
