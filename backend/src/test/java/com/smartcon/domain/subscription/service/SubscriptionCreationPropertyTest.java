@@ -93,7 +93,7 @@ class SubscriptionCreationPropertyTest {
         
         // Mock 설정
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(testTenant));
-        when(subscriptionPlanRepository.findByIdAndIsActiveTrue("BASIC")).thenReturn(Optional.of(testPlan));
+        when(subscriptionPlanRepository.findByPlanIdAndIsActiveTrue("BASIC")).thenReturn(Optional.of(testPlan));
         when(subscriptionRepository.existsActiveByTenant(testTenant)).thenReturn(false);
     }
 

@@ -90,6 +90,10 @@ public class Subscription extends BaseEntity {
     @Column(name = "termination_reason", columnDefinition = "TEXT")
     private String terminationReason;
     
+    // 낙관적 잠금을 위한 버전 필드
+    @Version
+    private Long version;
+    
     @Builder
     public Subscription(Tenant tenant, SubscriptionPlan plan, SubscriptionStatus status,
                        LocalDate startDate, LocalDate endDate, LocalDate nextBillingDate,
@@ -190,6 +194,13 @@ public class Subscription extends BaseEntity {
     public void autoApprove() {
         this.status = SubscriptionStatus.AUTO_APPROVED;
         this.approvedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * 승인 요청 시간 업데이트
+     */
+    public void updateApprovalRequestedAt(LocalDateTime approvalRequestedAt) {
+        this.approvalRequestedAt = approvalRequestedAt;
     }
     
     /**

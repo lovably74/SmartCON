@@ -51,10 +51,13 @@ public class SubscriptionApproval extends BaseEntity {
     @Column(name = "processed_at", nullable = false)
     private LocalDateTime processedAt;
     
+    @Column(name = "auto_approved", nullable = false)
+    private boolean autoApproved = false;
+    
     @Builder
     public SubscriptionApproval(Long subscriptionId, User admin, SubscriptionStatus fromStatus,
                                SubscriptionStatus toStatus, String reason, ApprovalAction action,
-                               LocalDateTime processedAt) {
+                               LocalDateTime processedAt, boolean autoApproved) {
         this.subscriptionId = subscriptionId;
         this.admin = admin;
         this.fromStatus = fromStatus;
@@ -62,5 +65,6 @@ public class SubscriptionApproval extends BaseEntity {
         this.reason = reason;
         this.action = action;
         this.processedAt = processedAt != null ? processedAt : LocalDateTime.now();
+        this.autoApproved = autoApproved;
     }
 }

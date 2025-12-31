@@ -14,6 +14,8 @@ import com.smartcon.domain.tenant.repository.TenantRepository;
 import com.smartcon.global.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,12 +42,12 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     private final TenantRepository tenantRepository;
     private final ObjectMapper objectMapper;
     
-    // 자동 승인 시스템 전체 활성화 상태를 관리하는 키
-    private static final String AUTO_APPROVAL_ENABLED_KEY = "AUTO_APPROVAL_ENABLED";
+    // 자동 승인 시스템 전체 활성화 상태를 관리
     private static boolean autoApprovalSystemEnabled = true; // 기본값: 활성화
     
     @Override
     @Transactional
+    @CacheEvict(value = "autoApprovalRules", allEntries = true)
     public AutoApprovalRuleDto createRule(AutoApprovalRuleDto ruleDto) {
         log.info("자동 승인 규칙 생성 시작: {}", ruleDto.getRuleName());
         
@@ -67,6 +69,7 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     
     @Override
     @Transactional
+    @CacheEvict(value = "autoApprovalRules", allEntries = true)
     public AutoApprovalRuleDto updateRule(Long ruleId, AutoApprovalRuleDto ruleDto) {
         log.info("자동 승인 규칙 수정 시작: ID={}", ruleId);
         
@@ -91,6 +94,7 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     
     @Override
     @Transactional
+    @CacheEvict(value = "autoApprovalRules", allEntries = true)
     public void deleteRule(Long ruleId) {
         log.info("자동 승인 규칙 삭제 시작: ID={}", ruleId);
         
@@ -104,6 +108,7 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     
     @Override
     @Transactional
+    @CacheEvict(value = "autoApprovalRules", allEntries = true)
     public AutoApprovalRuleDto toggleRuleStatus(Long ruleId, boolean isActive) {
         log.info("자동 승인 규칙 상태 변경 시작: ID={}, 활성화={}", ruleId, isActive);
         
@@ -131,7 +136,9 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     }
     
     @Override
+    @Cacheable(value = "autoApprovalRules", key = "'active'")
     public List<AutoApprovalRuleDto> getActiveRules() {
+        log.debug("활성 자동 승인 규칙 조회 (캐시 적용)");
         List<AutoApprovalRule> activeRules = autoApprovalRuleRepository
                 .findByIsActiveTrueOrderByPriorityDescIdAsc();
         
@@ -224,6 +231,7 @@ public class AutoApprovalRuleServiceImpl implements AutoApprovalRuleService {
     
     @Override
     @Transactional
+    @CacheEvict(value = "autoApprovalRules", allEntries = true)
     public void toggleAutoApprovalSystem(boolean enabled) {
         log.info("자동 승인 시스템 상태 변경: {}", enabled ? "활성화" : "비활성화");
         autoApprovalSystemEnabled = enabled;

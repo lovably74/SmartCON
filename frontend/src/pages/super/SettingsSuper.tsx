@@ -19,6 +19,7 @@ export default function SettingsSuper() {
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
             <TabsTrigger value="general">일반 설정</TabsTrigger>
+            <TabsTrigger value="approval">자동 승인</TabsTrigger>
             <TabsTrigger value="security">보안 정책</TabsTrigger>
             <TabsTrigger value="system">시스템 상태</TabsTrigger>
           </TabsList>
@@ -50,6 +51,47 @@ export default function SettingsSuper() {
                 </div>
                 <div className="flex justify-end">
                   <Button>저장하기</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="approval" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>자동 승인 규칙 관리</CardTitle>
+                <CardDescription>구독 신청의 자동 승인 조건을 설정하고 관리합니다.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">자동 승인 시스템</Label>
+                    <p className="text-sm text-muted-foreground">
+                      설정된 규칙에 따라 구독 신청을 자동으로 승인합니다.
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">5</div>
+                    <p className="text-sm text-muted-foreground">활성 규칙</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">78%</div>
+                    <p className="text-sm text-muted-foreground">자동 승인률</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">156</div>
+                    <p className="text-sm text-muted-foreground">이번 달 적용</p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button>
+                    상세 관리하기
+                  </Button>
                 </div>
               </CardContent>
             </Card>

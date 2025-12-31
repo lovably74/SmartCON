@@ -144,7 +144,7 @@
   - 모달 다이얼로그 테스트
   - _Requirements: 3.1, 3.2_
 
-- [-] 9. 테넌트 사용자 인터페이스 구현
+- [x] 9. 테넌트 사용자 인터페이스 구현
 - [x] 9.1 구독 상태 표시 컴포넌트 구현
   - 상태별 메시지 및 안내 표시
   - 재신청 버튼 및 연락처 정보 표시
@@ -158,116 +158,116 @@
   - **Property 26: Terminated Status UI Behavior**
   - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
-- [-] 9.3 기존 SubscriptionHQ 컴포넌트 수정
+- [x] 9.3 기존 SubscriptionHQ 컴포넌트 수정
   - 구독 신청 시 승인 대기 상태 안내 추가
   - 구독 이력에 승인 정보 표시
   - 상태별 액션 버튼 조건부 표시
   - _Requirements: 1.1, 4.5_
 
-- [ ] 10. 알림 시스템 프론트엔드 구현
-- [ ] 10.1 인앱 알림 컴포넌트 구현
+- [x] 10. 알림 시스템 프론트엔드 구현
+- [x] 10.1 인앱 알림 컴포넌트 구현
   - 알림 목록 표시 컴포넌트
   - 실시간 알림 수신 및 표시
   - 읽음 처리 및 알림 관리 기능
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 10.2 알림 API 연동 및 상태 관리
+- [x] 10.2 알림 API 연동 및 상태 관리
   - 알림 조회 및 읽음 처리 API 연동
   - Zustand 스토어를 통한 알림 상태 관리
   - 실시간 업데이트를 위한 폴링 또는 WebSocket 연동
   - _Requirements: 2.1, 2.2_
 
-- [ ] 10.3 Write unit tests for notification components
+- [x] 10.3 Write unit tests for notification components
   - 알림 표시 테스트
   - 읽음 처리 테스트
   - 실시간 업데이트 테스트
   - _Requirements: 2.1, 2.2_
 
-- [ ] 11. 자동 승인 규칙 관리 인터페이스 구현
-- [ ] 11.1 자동 승인 규칙 설정 컴포넌트 구현
+- [x] 11. 자동 승인 규칙 관리 인터페이스 구현
+- [x] 11.1 자동 승인 규칙 설정 컴포넌트 구현
   - 규칙 생성 및 편집 폼 구현
   - 조건 설정 인터페이스 (요금제, 결제 방법 등)
   - 규칙 우선순위 및 활성화 상태 관리
   - _Requirements: 7.1, 7.4, 7.5_
 
-- [ ] 11.2 규칙 목록 및 관리 대시보드 구현
+- [x] 11.2 규칙 목록 및 관리 대시보드 구현
   - 기존 규칙 목록 표시 및 편집 기능
   - 규칙 적용 통계 및 모니터링 정보 표시
   - 자동 승인 기능 전체 활성화/비활성화 토글
   - _Requirements: 7.4, 7.5_
 
-- [ ] 11.3 Write property test for auto-approval rule management
+- [x] 11.3 Write property test for auto-approval rule management
   - **Property 29: Auto-Approval Rule Application Timing**
   - **Property 30: Auto-Approval Disable Functionality**
   - **Validates: Requirements 7.4, 7.5**
 
-- [ ] 12. 접근 제어 및 보안 강화
-- [ ] 12.1 서비스 접근 제어 로직 구현
+- [-] 12. 접근 제어 및 보안 강화
+- [x] 12.1 서비스 접근 제어 로직 구현
   - 구독 상태별 서비스 접근 권한 검증
   - 미들웨어 또는 인터셉터를 통한 접근 제어
   - 상태별 리다이렉션 및 안내 메시지 처리
   - _Requirements: 1.2, 3.1, 3.2_
 
-- [ ] 12.2 Write property test for access control
+- [x] 12.2 Write property test for access control
   - **Property 2: Pending Subscription Access Control**
   - **Validates: Requirements 1.2**
 
-- [ ] 12.3 권한 기반 API 접근 제어 강화
+- [x] 12.3 권한 기반 API 접근 제어 강화
   - 슈퍼관리자 전용 API 엔드포인트 보안 강화
   - JWT 토큰 검증 및 역할 기반 접근 제어
   - API 요청 로깅 및 감사 추적 구현
   - _Requirements: 1.4, 1.5, 3.1, 3.2_
 
-- [ ] 13. 데이터 무결성 및 상태 전환 검증
-- [ ] 13.1 상태 전환 검증 로직 구현
+- [x] 13. 데이터 무결성 및 상태 전환 검증
+- [x] 13.1 상태 전환 검증 로직 구현
   - 비즈니스 규칙에 따른 상태 전환 매트릭스 정의
   - 잘못된 상태 전환 시도 차단 및 오류 처리
   - 동시성 제어를 위한 낙관적 잠금 구현
   - _Requirements: 8.3_
 
-- [ ] 13.2 Write property test for state transition validation
+- [x] 13.2 Write property test for state transition validation
   - **Property 31: State Transition Validation**
   - **Validates: Requirements 8.3**
 
-- [ ] 13.3 데이터 일관성 검증 및 복구 메커니즘
+- [x] 13.3 데이터 일관성 검증 및 복구 메커니즘
   - 주기적 데이터 무결성 검사 배치 작업 구현
   - 불일치 데이터 감지 및 알림 시스템
   - 자동 복구 로직 및 수동 복구 도구 구현
   - _Requirements: 5.3, 8.5_
 
-- [ ] 14. 성능 최적화 및 모니터링
-- [ ] 14.1 데이터베이스 쿼리 최적화
+- [x] 14. 성능 최적화 및 모니터링
+- [x] 14.1 데이터베이스 쿼리 최적화
   - 승인 대기 목록 조회 성능 최적화
   - 인덱스 추가 및 쿼리 튜닝
   - 페이지네이션 성능 개선
   - _Requirements: 1.3, 4.3_
 
-- [ ] 14.2 캐싱 및 비동기 처리 구현
+- [x] 14.2 캐싱 및 비동기 처리 구현
   - 자동 승인 규칙 캐싱 구현
   - 알림 발송 비동기 처리
   - 대시보드 통계 데이터 캐싱
   - _Requirements: 2.1, 7.2, 4.1_
 
-- [ ] 14.3 Write performance tests
+- [x] 14.3 Write performance tests
   - 대량 데이터 처리 성능 테스트
   - 동시 요청 처리 성능 테스트
   - 메모리 사용량 및 응답 시간 측정
   - _Requirements: 1.3, 2.1_
 
-- [ ] 15. 통합 테스트 및 E2E 테스트
-- [ ] 15.1 승인 워크플로우 통합 테스트
+- [-] 15. 통합 테스트 및 E2E 테스트
+- [x] 15.1 승인 워크플로우 통합 테스트
   - 전체 승인 프로세스 end-to-end 테스트
   - 다양한 시나리오별 통합 테스트
   - API와 데이터베이스 연동 테스트
   - _Requirements: 1.1, 1.4, 1.5, 2.1, 2.2_
 
-- [ ] 15.2 Write integration tests for approval workflow
+- [x] 15.2 Write integration tests for approval workflow
   - 승인 프로세스 전체 플로우 테스트
   - 알림 발송 연동 테스트
   - 상태 변경 및 접근 제어 통합 테스트
   - _Requirements: 1.4, 2.1, 3.1_
 
-- [ ] 15.3 프론트엔드 E2E 테스트
+- [-] 15.3 프론트엔드 E2E 테스트
   - Cypress 또는 Playwright를 사용한 E2E 테스트
   - 사용자 시나리오별 테스트 케이스 작성
   - 브라우저 호환성 및 반응형 디자인 테스트

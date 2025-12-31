@@ -79,4 +79,11 @@ public class Notification extends BaseEntity {
         this.isRead = false;
         this.readAt = null;
     }
+    
+    /**
+     * 수신자 ID 반환
+     */
+    public Long getRecipientId() {
+        return recipient != null ? recipient.getId() : null;
+    }
 }

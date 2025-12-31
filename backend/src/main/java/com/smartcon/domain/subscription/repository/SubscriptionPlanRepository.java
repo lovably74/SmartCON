@@ -23,10 +23,10 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
     /**
      * 활성화된 요금제 조회
      */
-    Optional<SubscriptionPlan> findByIdAndIsActiveTrue(String id);
+    Optional<SubscriptionPlan> findByPlanIdAndIsActiveTrue(String planId);
     
     /**
      * 요금제 존재 여부 확인
      */
-    boolean existsByIdAndIsActiveTrue(String id);
+    boolean existsByPlanIdAndIsActiveTrue(String planId);
 }

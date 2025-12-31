@@ -2,7 +2,23 @@
  * API 클라이언트 유틸리티
  */
 
+import type { Notification, NotificationStats, NotificationPageParams } from '@/types/notification';
+
 const API_BASE_URL = 'http://localhost:8080/api';
+
+/**
+ * 구독 접근 오류 클래스
+ */
+export class SubscriptionAccessError extends Error {
+  constructor(
+    message: string,
+    public subscriptionStatus: string,
+    public redirectUrl?: string
+  ) {
+    super(message);
+    this.name = 'SubscriptionAccessError';
+  }
+}
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -148,6 +164,29 @@ class ApiClient {
         ...options,
       });
 
+      // 구독 상태로 인한 접근 거부 처리
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (errorData.error === 'ACCESS_DENIED' && errorData.subscriptionStatus) {
+          // 구독 상태 오류 이벤트 발생
+          const subscriptionError = new CustomEvent('subscriptionAccessDenied', {
+            detail: {
+              subscriptionStatus: errorData.subscriptionStatus,
+              message: errorData.message,
+              redirectUrl: errorData.redirectUrl
+            }
+          });
+          window.dispatchEvent(subscriptionError);
+          
+          throw new SubscriptionAccessError(
+            errorData.message || '구독 상태로 인해 접근이 거부되었습니다.',
+            errorData.subscriptionStatus,
+            errorData.redirectUrl
+          );
+        }
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -265,6 +304,53 @@ class ApiClient {
     return this.request<void>(`/api/v1/admin/subscriptions/${subscriptionId}/terminate`, {
       method: 'POST',
       body: JSON.stringify(request),
+    });
+  }
+
+  // 알림 목록 조회
+  async getNotifications(params?: NotificationPageParams): Promise<ApiResponse<PageResponse<Notification>>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params?.size !== undefined) searchParams.append('size', params.size.toString());
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortDir) searchParams.append('sortDir', params.sortDir);
+    
+    // 필터 파라미터 추가
+    if (params?.filter?.type) searchParams.append('type', params.filter.type);
+    if (params?.filter?.isRead !== undefined) searchParams.append('isRead', params.filter.isRead.toString());
+    if (params?.filter?.dateFrom) searchParams.append('dateFrom', params.filter.dateFrom);
+    if (params?.filter?.dateTo) searchParams.append('dateTo', params.filter.dateTo);
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/notifications${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PageResponse<Notification>>(endpoint);
+  }
+
+  // 알림 통계 조회
+  async getNotificationStats(): Promise<ApiResponse<NotificationStats>> {
+    return this.request<NotificationStats>('/api/v1/notifications/stats');
+  }
+
+  // 알림 읽음 처리
+  async markNotificationAsRead(notificationId: number): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  // 모든 알림 읽음 처리
+  async markAllNotificationsAsRead(): Promise<ApiResponse<void>> {
+    return this.request<void>('/api/v1/notifications/read-all', {
+      method: 'PATCH',
+    });
+  }
+
+  // 알림 삭제
+  async deleteNotification(notificationId: number): Promise<ApiResponse<void>> {
+    return this.request<void>(`/api/v1/notifications/${notificationId}`, {
+      method: 'DELETE',
     });
   }
 }

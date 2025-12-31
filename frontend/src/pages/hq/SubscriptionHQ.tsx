@@ -184,9 +184,9 @@ const SubscriptionHQ: React.FC = () => {
       {shouldShowStatusDisplay && (
         <SubscriptionStatusDisplay
           status={currentSubscription.status as any}
-          rejectionReason={currentSubscription.rejectionReason}
-          suspensionReason={currentSubscription.suspensionReason}
-          terminationReason={currentSubscription.terminationReason}
+          rejectionReason={currentSubscription.rejectionReason || undefined}
+          suspensionReason={currentSubscription.suspensionReason || undefined}
+          terminationReason={currentSubscription.terminationReason || undefined}
           onReapply={handleReapply}
           onNewSubscription={handleNewSubscription}
         />
@@ -407,6 +407,29 @@ const SubscriptionHQ: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="plans" className="space-y-6">
+          {currentSubscription.status !== 'ACTIVE' && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-yellow-800">
+                  <Info className="h-5 w-5" />
+                  <span>요금제 변경 안내</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-yellow-700">
+                  {currentSubscription.status === 'PENDING_APPROVAL' && 
+                    '구독 승인 후 요금제 변경이 가능합니다.'}
+                  {currentSubscription.status === 'REJECTED' && 
+                    '구독이 거부된 상태입니다. 재신청 후 요금제를 선택하세요.'}
+                  {currentSubscription.status === 'SUSPENDED' && 
+                    '구독이 일시 중지된 상태입니다. 재활성화 후 요금제 변경이 가능합니다.'}
+                  {currentSubscription.status === 'TERMINATED' && 
+                    '구독이 종료된 상태입니다. 새로운 구독 신청이 필요합니다.'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((plan) => (
               <Card 
@@ -457,9 +480,10 @@ const SubscriptionHQ: React.FC = () => {
                   <Button 
                     className="w-full" 
                     variant={plan.id === currentSubscription.plan.id ? "secondary" : "default"}
-                    disabled={plan.id === currentSubscription.plan.id}
+                    disabled={plan.id === currentSubscription.plan.id || currentSubscription.status !== 'ACTIVE'}
                   >
-                    {plan.id === currentSubscription.plan.id ? '현재 요금제' : '변경하기'}
+                    {plan.id === currentSubscription.plan.id ? '현재 요금제' : 
+                     currentSubscription.status !== 'ACTIVE' ? '승인 후 변경 가능' : '변경하기'}
                   </Button>
                 </CardContent>
               </Card>
@@ -468,6 +492,29 @@ const SubscriptionHQ: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-6">
+          {currentSubscription.status !== 'ACTIVE' && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-blue-800">
+                  <Info className="h-5 w-5" />
+                  <span>결제 관리 안내</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-blue-700">
+                  {currentSubscription.status === 'PENDING_APPROVAL' && 
+                    '구독 승인 후 결제가 시작됩니다.'}
+                  {currentSubscription.status === 'REJECTED' && 
+                    '구독이 거부되어 결제가 진행되지 않습니다.'}
+                  {currentSubscription.status === 'SUSPENDED' && 
+                    '구독이 일시 중지되어 결제가 중단되었습니다.'}
+                  {currentSubscription.status === 'TERMINATED' && 
+                    '구독이 종료되어 결제가 완전히 중단되었습니다.'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle>결제 내역</CardTitle>
@@ -531,7 +578,7 @@ const SubscriptionHQ: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {currentSubscription.approvalHistory.map((history, index) => (
+                {currentSubscription.approvalHistory.map((history) => (
                   <div key={history.id} className="flex items-start space-x-4 p-4 border rounded-lg">
                     <div className="flex-shrink-0">
                       {history.action === 'REQUEST' && <Clock className="h-5 w-5 text-yellow-500" />}

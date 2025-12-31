@@ -110,7 +110,7 @@ class SubscriptionServiceTest {
             
             given(tenantRepository.findById(tenantId)).willReturn(Optional.of(testTenant));
             given(subscriptionRepository.existsActiveByTenant(testTenant)).willReturn(false);
-            given(subscriptionPlanRepository.findByIdAndIsActiveTrue("basic")).willReturn(Optional.of(testPlan));
+            given(subscriptionPlanRepository.findByPlanIdAndIsActiveTrue("basic")).willReturn(Optional.of(testPlan));
             
             Subscription savedSubscription = Subscription.builder()
                     .tenant(testTenant)
@@ -170,7 +170,7 @@ class SubscriptionServiceTest {
             
             given(tenantRepository.findById(tenantId)).willReturn(Optional.of(testTenant));
             given(subscriptionRepository.existsActiveByTenant(testTenant)).willReturn(false);
-            given(subscriptionPlanRepository.findByIdAndIsActiveTrue("invalid_plan")).willReturn(Optional.empty());
+            given(subscriptionPlanRepository.findByPlanIdAndIsActiveTrue("invalid_plan")).willReturn(Optional.empty());
             
             // When & Then
             assertThatThrownBy(() -> subscriptionService.createSubscription(request))

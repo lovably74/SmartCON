@@ -58,7 +58,8 @@ class SubscriptionApprovalPropertyTest {
                 subscriptionApprovalRepository,
                 userRepository,
                 notificationService,
-                autoApprovalRuleService
+                autoApprovalRuleService,
+                new SubscriptionStateTransitionValidator()
         );
         
         // Mock 관리자 설정
@@ -478,6 +479,7 @@ class SubscriptionApprovalPropertyTest {
         @Override public long countByStatus(SubscriptionStatus status) { return 0; }
         @Override public long countByStatusAndCreatedAtBefore(SubscriptionStatus status, LocalDateTime createdAt) { return 0; }
         @Override public List<Object[]> getSubscriptionExportData(SubscriptionStatus status, LocalDateTime startDate, LocalDateTime endDate) { return List.of(); }
+        @Override public Optional<Subscription> findCurrentByTenant(com.smartcon.domain.tenant.entity.Tenant tenant) { return Optional.empty(); }
     }
     
     /**

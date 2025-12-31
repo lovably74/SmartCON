@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
  * 구독 신청 및 온보딩 관련 컨트롤러
  */
 @RestController
-@RequestMapping("/api/v1/subscription")
+@RequestMapping("/api/v1/onboarding")
 @RequiredArgsConstructor
 public class TenantOnboardingController {
 
@@ -21,7 +21,7 @@ public class TenantOnboardingController {
         return ApiResponse.success(true);
     }
 
-    @PostMapping("/onboarding")
+    @PostMapping("/tenant")
     public ApiResponse<Tenant> onboardTenant(@RequestBody Tenant onboardingData) {
         // 테넌트 생성 및 초기 본사 관리자 설정 로직
         return ApiResponse.success(onboardingData);

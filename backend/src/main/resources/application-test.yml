@@ -23,15 +23,25 @@ spring:
   
   flyway:
     enabled: false  # 테스트에서는 JPA가 스키마 생성
+  
+  # 테스트용 보안 설정 비활성화
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+  
+  # 테스트용 스케줄링 비활성화
+  task:
+    scheduling:
+      enabled: false
 
 # 테스트용 로깅 설정
 logging:
   level:
-    com.smartcon: DEBUG
-    org.springframework.security: WARN
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.testcontainers: INFO
+    '[com.smartcon]': DEBUG
+    '[org.springframework.security]': WARN
+    '[org.hibernate.SQL]': DEBUG
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+    '[org.testcontainers]': INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 

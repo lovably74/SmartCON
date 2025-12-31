@@ -322,6 +322,168 @@ class AutoApprovalRulePropertyTest {
     }
     
     /**
+     * Property 29: Auto-Approval Rule Application Timing
+     * 자동 승인 규칙 적용 시점 테스트
+     * 
+     * **Validates: Requirements 7.4**
+     */
+    @Test
+    void autoApprovalRuleApplicationTimingTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule oldMockRule = AutoApprovalRule.builder()
+                .ruleName("기존 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("50000"))
+                .priority(1)
+                .build();
+        
+        AutoApprovalRule updatedMockRule = AutoApprovalRule.builder()
+                .ruleName("기존 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("30000")) // 변경된 최대 금액
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class)))
+                .thenReturn(oldMockRule)
+                .thenReturn(updatedMockRule);
+        when(autoApprovalRuleRepository.findById(1L))
+                .thenReturn(Optional.of(oldMockRule))
+                .thenReturn(Optional.of(updatedMockRule));
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityDescIdAsc())
+                .thenReturn(List.of(oldMockRule))
+                .thenReturn(List.of(updatedMockRule));
+        
+        // Given: 자동 승인 시스템이 활성화되어 있고
+        autoApprovalRuleService.toggleAutoApprovalSystem(true);
+        
+        // And: 기존 자동 승인 규칙이 존재함
+        AutoApprovalRuleDto originalRule = AutoApprovalRuleDto.builder()
+                .ruleName("기존 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("50000"))
+                .priority(1)
+                .build();
+        
+        autoApprovalRuleService.createRule(originalRule);
+        
+        // And: 구독 요청이 기존 규칙으로는 승인됨
+        CreateSubscriptionRequest request = new CreateSubscriptionRequest();
+        request.setPlanId(testPlan.getPlanId());
+        request.setBillingCycle(BillingCycle.MONTHLY);
+        
+        boolean shouldAutoApproveBeforeUpdate = autoApprovalRuleService.evaluateAutoApproval(request);
+        assertThat(shouldAutoApproveBeforeUpdate).isTrue();
+        
+        // When: 자동 승인 규칙을 수정 (최대 금액을 낮춤)
+        AutoApprovalRuleDto updatedRule = AutoApprovalRuleDto.builder()
+                .ruleName("기존 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("30000")) // 테스트 요금제 가격(50000)보다 낮음
+                .priority(1)
+                .build();
+        
+        autoApprovalRuleService.updateRule(1L, updatedRule);
+        
+        // Then: 새로운 구독 요청에는 수정된 규칙이 적용되어야 함
+        boolean shouldAutoApproveAfterUpdate = autoApprovalRuleService.evaluateAutoApproval(request);
+        assertThat(shouldAutoApproveAfterUpdate).isFalse(); // 최대 금액이 낮아져서 승인되지 않음
+        
+        // And: 적용된 규칙이 없어야 함 (조건을 만족하지 않으므로)
+        AutoApprovalRuleDto appliedRule = autoApprovalRuleService.getAppliedRule(request);
+        assertThat(appliedRule).isNull();
+    }
+    
+    /**
+     * Property 30: Auto-Approval Disable Functionality
+     * 자동 승인 비활성화 기능 테스트
+     * 
+     * **Validates: Requirements 7.5**
+     */
+    @Test
+    void autoApprovalDisableFunctionalityPropertyTest() throws Exception {
+        // Given: Mock 설정
+        AutoApprovalRule mockRule = AutoApprovalRule.builder()
+                .ruleName("테스트 규칙")
+                .isActive(true)
+                .planIds("[\"BASIC\"]")
+                .verifiedTenantsOnly(false)
+                .paymentMethods("[\"CARD\"]")
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        when(autoApprovalRuleRepository.save(any(AutoApprovalRule.class))).thenReturn(mockRule);
+        when(autoApprovalRuleRepository.findByIsActiveTrueOrderByPriorityDescIdAsc())
+                .thenReturn(List.of(mockRule));
+        
+        // Given: 자동 승인 시스템이 활성화되어 있고
+        autoApprovalRuleService.toggleAutoApprovalSystem(true);
+        
+        // And: 활성화된 자동 승인 규칙이 존재함
+        AutoApprovalRuleDto ruleDto = AutoApprovalRuleDto.builder()
+                .ruleName("테스트 규칙")
+                .isActive(true)
+                .planIds(List.of(testPlan.getPlanId()))
+                .verifiedTenantsOnly(false)
+                .paymentMethods(List.of("CARD"))
+                .maxAmount(new BigDecimal("100000"))
+                .priority(1)
+                .build();
+        
+        autoApprovalRuleService.createRule(ruleDto);
+        
+        // And: 구독 요청이 자동 승인 조건을 만족함
+        CreateSubscriptionRequest request = new CreateSubscriptionRequest();
+        request.setPlanId(testPlan.getPlanId());
+        request.setBillingCycle(BillingCycle.MONTHLY);
+        
+        // When: 자동 승인 시스템이 활성화된 상태에서 평가
+        boolean shouldAutoApproveWhenEnabled = autoApprovalRuleService.evaluateAutoApproval(request);
+        
+        // Then: 자동 승인되어야 함
+        assertThat(shouldAutoApproveWhenEnabled).isTrue();
+        
+        // When: 자동 승인 시스템을 비활성화
+        autoApprovalRuleService.toggleAutoApprovalSystem(false);
+        
+        // And: 동일한 구독 요청을 다시 평가
+        boolean shouldAutoApproveWhenDisabled = autoApprovalRuleService.evaluateAutoApproval(request);
+        
+        // Then: 자동 승인 시스템이 비활성화되어 있으므로 자동 승인되지 않아야 함
+        assertThat(shouldAutoApproveWhenDisabled).isFalse();
+        
+        // And: 적용된 규칙이 없어야 함
+        AutoApprovalRuleDto appliedRule = autoApprovalRuleService.getAppliedRule(request);
+        assertThat(appliedRule).isNull();
+        
+        // When: 자동 승인 시스템을 다시 활성화
+        autoApprovalRuleService.toggleAutoApprovalSystem(true);
+        
+        // And: 동일한 구독 요청을 다시 평가
+        boolean shouldAutoApproveWhenReEnabled = autoApprovalRuleService.evaluateAutoApproval(request);
+        
+        // Then: 다시 자동 승인되어야 함
+        assertThat(shouldAutoApproveWhenReEnabled).isTrue();
+        
+        // And: 시스템 상태 조회가 올바르게 작동해야 함
+        boolean isSystemEnabled = autoApprovalRuleService.isAutoApprovalEnabled();
+        assertThat(isSystemEnabled).isTrue();
+    }
+
+    /**
      * 규칙 상태 변경 테스트
      */
     @Test

@@ -79,7 +79,7 @@ public class SubscriptionService {
         }
         
         // 요금제 조회
-        SubscriptionPlan plan = subscriptionPlanRepository.findByIdAndIsActiveTrue(request.getPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findByPlanIdAndIsActiveTrue(request.getPlanId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 요금제입니다"));
         
         // 구독 생성 (PENDING_APPROVAL 상태로 시작)
@@ -185,7 +185,7 @@ public class SubscriptionService {
         log.info("구독 {} 요금제 변경: {}", subscriptionId, newPlanId);
         
         Subscription subscription = getSubscription(subscriptionId);
-        SubscriptionPlan newPlan = subscriptionPlanRepository.findByIdAndIsActiveTrue(newPlanId)
+        SubscriptionPlan newPlan = subscriptionPlanRepository.findByPlanIdAndIsActiveTrue(newPlanId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 요금제입니다"));
         
         BigDecimal newPrice = calculatePrice(newPlan, subscription.getBillingCycle(), subscription.getDiscountRate());

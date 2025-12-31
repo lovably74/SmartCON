@@ -1,6 +1,6 @@
 import React from 'react';
-import { Navigate } from 'wouter';
-import SubscriptionStatusDisplay, { SubscriptionStatus } from './SubscriptionStatusDisplay';
+import { useLocation } from 'wouter';
+import SubscriptionStatusDisplay, { type SubscriptionStatus } from './SubscriptionStatusDisplay';
 
 interface SubscriptionGuardProps {
   children: React.ReactNode;
@@ -29,8 +29,10 @@ const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
   redirectTo = '/subscription',
   showStatusDisplay = true
 }) => {
+  const [, setLocation] = useLocation();
+  
   // 서비스 접근이 허용되는 상태들
-  const allowedStatuses: SubscriptionStatus[] = ['ACTIVE'];
+  const allowedStatuses: SubscriptionStatus[] = ['ACTIVE', 'AUTO_APPROVED', 'TRIAL'];
   
   // 현재 상태가 허용된 상태인지 확인
   const isAccessAllowed = allowedStatuses.includes(subscriptionStatus);
@@ -53,7 +55,10 @@ const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
       );
     } else {
       // 리다이렉션
-      return <Navigate to={redirectTo} replace />;
+      React.useEffect(() => {
+        setLocation(redirectTo);
+      }, [setLocation, redirectTo]);
+      return null;
     }
   }
   

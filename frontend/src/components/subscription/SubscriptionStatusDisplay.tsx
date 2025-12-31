@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
   Clock, 
   XCircle, 
@@ -115,7 +114,7 @@ const SubscriptionStatusDisplay: React.FC<SubscriptionStatusDisplayProps> = ({
         <div className="flex items-center space-x-3">
           {config.icon}
           <div>
-            <CardTitle className={`text-xl ${config.textColor}`}>
+            <CardTitle className={`text-xl ${config.textColor}`} role="heading" aria-level={2}>
               {config.title}
             </CardTitle>
             <CardDescription className={config.textColor}>

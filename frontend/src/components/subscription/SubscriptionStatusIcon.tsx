@@ -9,7 +9,7 @@ import {
   Pause,
   Calendar
 } from 'lucide-react';
-import { SubscriptionStatus } from './SubscriptionStatusDisplay';
+import { type SubscriptionStatus } from './SubscriptionStatusDisplay';
 
 interface SubscriptionStatusIconProps {
   status: SubscriptionStatus;
