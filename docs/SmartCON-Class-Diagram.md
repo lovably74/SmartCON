@@ -1112,235 +1112,480 @@ classDiagram
 
 ## 6. 데이터베이스 ERD
 
+### 데이터베이스 설계 개요
+SmartCON Lite의 데이터베이스는 멀티테넌트 SaaS 아키텍처를 지원하는 관계형 데이터베이스로 설계되었습니다. 
+모든 비즈니스 데이터는 테넌트별로 격리되며, 구독 관리, 사용자 관리, 출입 관리 등의 핵심 기능을 지원합니다.
+
 ```mermaid
 erDiagram
+    %% 테넌트 (회사) 테이블 - 멀티테넌트 아키텍처의 핵심
     TENANTS {
-        bigint id PK
-        varchar company_name
-        varchar business_no
-        varchar representative_name
-        varchar address
-        varchar phone_number
-        varchar email
-        enum status
-        boolean is_verified
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "테넌트 고유 식별자 (자동 증가)"
+        varchar company_name "회사명 (필수, 최대 100자)"
+        varchar business_no "사업자등록번호 (10자리, 유니크)"
+        varchar representative_name "대표자명 (최대 50자)"
+        varchar address "회사 주소 (최대 200자)"
+        varchar phone_number "회사 전화번호 (국제 형식)"
+        varchar email "회사 대표 이메일 (유니크)"
+        enum status "테넌트 상태 (ACTIVE/INACTIVE/SUSPENDED)"
+        boolean is_verified "사업자등록증 인증 완료 여부"
+        timestamp created_at "테넌트 생성 일시"
+        timestamp updated_at "테넌트 정보 수정 일시"
     }
     
+    %% 사용자 테이블 - 시스템 사용자 정보 (테넌트별 격리)
     USERS {
-        bigint id PK
-        bigint tenant_id FK
-        varchar name
-        varchar email
-        varchar phone_number
-        varchar provider_id
-        enum provider
-        varchar password_hash
-        boolean is_active
-        boolean is_email_verified
-        varchar profile_image_url
-        text face_embedding
-        int login_failure_count
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "사용자 고유 식별자 (자동 증가)"
+        bigint tenant_id FK "소속 테넌트 ID (NOT NULL, 인덱스)"
+        varchar name "사용자 실명 (필수, 최대 50자)"
+        varchar email "이메일 주소 (테넌트 내 유니크, 로그인 ID)"
+        varchar phone_number "휴대폰 번호 (국제 형식, 선택사항)"
+        varchar provider_id "소셜 로그인 고유 ID (카카오/네이버)"
+        enum provider "로그인 제공자 (LOCAL/KAKAO/NAVER)"
+        varchar password_hash "BCrypt 암호화된 비밀번호 (소셜 로그인 시 NULL)"
+        enum role "사용자 역할 (SUPER/HQ/SITE/TEAM/WORKER)"
+        boolean is_active "계정 활성화 상태 (기본값: true)"
+        boolean is_email_verified "이메일 인증 완료 여부 (기본값: false)"
+        varchar profile_image_url "프로필 이미지 URL (S3 경로)"
+        text face_embedding "FaceNet 얼굴 임베딩 벡터 (Base64)"
+        int login_failure_count "연속 로그인 실패 횟수 (기본값: 0)"
+        timestamp last_login_at "마지막 로그인 시간"
+        timestamp password_changed_at "비밀번호 변경 시간"
+        timestamp created_at "사용자 생성 일시"
+        timestamp updated_at "사용자 정보 수정 일시"
     }
     
+    %% 구독 플랜 테이블 - SaaS 서비스 플랜 정의
     SUBSCRIPTION_PLANS {
-        varchar plan_id PK
-        varchar plan_name
-        text description
-        decimal monthly_price
-        decimal yearly_price
-        int max_users
-        int max_sites
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
+        varchar plan_id PK "플랜 고유 식별자 (예: BASIC, PREMIUM)"
+        varchar plan_name "플랜 이름 (예: 베이직 플랜)"
+        text description "플랜 상세 설명"
+        decimal monthly_price "월 요금 (원, 소수점 2자리)"
+        decimal yearly_price "연 요금 (원, 소수점 2자리)"
+        int max_users "최대 사용자 수 (0: 무제한)"
+        int max_sites "최대 현장 수 (0: 무제한)"
+        json features "플랜별 기능 목록 (JSON 배열)"
+        boolean is_active "플랜 활성화 상태"
+        timestamp created_at "플랜 생성 일시"
+        timestamp updated_at "플랜 수정 일시"
     }
     
+    %% 구독 테이블 - 테넌트별 구독 정보 및 상태 관리
     SUBSCRIPTIONS {
-        bigint id PK
-        bigint tenant_id FK
-        varchar plan_id FK
-        enum status
-        date start_date
-        date end_date
-        date next_billing_date
-        enum billing_cycle
-        decimal monthly_price
-        decimal discount_rate
-        boolean auto_renewal
-        date trial_end_date
-        timestamp approval_requested_at
-        timestamp approved_at
-        bigint approved_by FK
-        text rejection_reason
-        text suspension_reason
-        text termination_reason
-        bigint version
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "구독 고유 식별자 (자동 증가)"
+        bigint tenant_id FK "구독 테넌트 ID (NOT NULL, 인덱스)"
+        varchar plan_id FK "구독 플랜 ID (NOT NULL)"
+        enum status "구독 상태 (PENDING/ACTIVE/SUSPENDED/TERMINATED)"
+        date start_date "구독 시작일"
+        date end_date "구독 종료일"
+        date next_billing_date "다음 결제일"
+        enum billing_cycle "결제 주기 (MONTHLY/YEARLY)"
+        decimal monthly_price "실제 월 결제 금액 (할인 적용 후)"
+        decimal discount_rate "할인율 (0.0~1.0)"
+        boolean auto_renewal "자동 갱신 여부 (기본값: true)"
+        date trial_end_date "무료 체험 종료일 (체험 시에만)"
+        timestamp approval_requested_at "승인 요청 시간"
+        timestamp approved_at "승인 완료 시간"
+        bigint approved_by FK "승인 처리자 ID (USERS 테이블 참조)"
+        text rejection_reason "거부 사유 (거부 시에만)"
+        text suspension_reason "일시 중지 사유 (중지 시에만)"
+        text termination_reason "종료 사유 (종료 시에만)"
+        bigint version "낙관적 락을 위한 버전 (동시성 제어)"
+        timestamp created_at "구독 생성 일시"
+        timestamp updated_at "구독 정보 수정 일시"
     }
     
+    %% 구독 승인 이력 테이블 - 모든 승인 관련 액션 추적
     SUBSCRIPTION_APPROVALS {
-        bigint id PK
-        bigint subscription_id FK
-        bigint admin_id FK
-        enum from_status
-        enum to_status
-        text reason
-        enum action
-        timestamp processed_at
-        boolean auto_approved
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "승인 이력 고유 식별자 (자동 증가)"
+        bigint subscription_id FK "대상 구독 ID (NOT NULL, 인덱스)"
+        bigint admin_id FK "처리한 관리자 ID (USERS 테이블 참조)"
+        enum from_status "변경 전 상태"
+        enum to_status "변경 후 상태"
+        text reason "처리 사유 (필수)"
+        enum action "수행된 액션 (APPROVE/REJECT/SUSPEND/TERMINATE)"
+        timestamp processed_at "처리 완료 시간"
+        boolean auto_approved "자동 승인 여부 (규칙 기반)"
+        json metadata "추가 메타데이터 (IP, User-Agent 등)"
+        timestamp created_at "이력 생성 일시"
+        timestamp updated_at "이력 수정 일시"
     }
     
+    %% 자동 승인 규칙 테이블 - 구독 자동 승인을 위한 규칙 정의
     AUTO_APPROVAL_RULES {
-        bigint id PK
-        varchar rule_name
-        boolean is_active
-        json plan_ids
-        boolean verified_tenants_only
-        json payment_methods
-        decimal max_amount
-        int priority
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "규칙 고유 식별자 (자동 증가)"
+        varchar rule_name "규칙 이름 (최대 100자)"
+        boolean is_active "규칙 활성화 상태 (기본값: true)"
+        json plan_ids "적용 대상 플랜 ID 목록 (JSON 배열)"
+        boolean verified_tenants_only "인증된 테넌트만 대상 (기본값: false)"
+        json payment_methods "허용 결제 수단 목록 (JSON 배열)"
+        decimal max_amount "자동 승인 최대 금액 (원)"
+        int priority "규칙 우선순위 (낮을수록 우선, 기본값: 100)"
+        json conditions "추가 조건 (JSON 객체)"
+        timestamp created_at "규칙 생성 일시"
+        timestamp updated_at "규칙 수정 일시"
     }
     
+    %% 알림 테이블 - 사용자별 실시간 알림 관리
     NOTIFICATIONS {
-        bigint id PK
-        bigint user_id FK
-        bigint tenant_id FK
-        enum type
-        varchar title
-        text message
-        json data
-        boolean is_read
-        timestamp read_at
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "알림 고유 식별자 (자동 증가)"
+        bigint user_id FK "알림 수신자 ID (NULL 가능: 전체 알림)"
+        bigint tenant_id FK "알림 대상 테넌트 ID (NULL 가능: 시스템 알림)"
+        enum type "알림 타입 (SUBSCRIPTION/PAYMENT/SYSTEM/ATTENDANCE)"
+        varchar title "알림 제목 (최대 100자)"
+        text message "알림 내용"
+        json data "알림 관련 데이터 (JSON 객체)"
+        boolean is_read "읽음 여부 (기본값: false)"
+        timestamp read_at "읽음 처리 시간"
+        timestamp expires_at "알림 만료 시간 (NULL: 만료 없음)"
+        enum priority "알림 우선순위 (LOW/NORMAL/HIGH/URGENT)"
+        timestamp created_at "알림 생성 일시"
+        timestamp updated_at "알림 수정 일시"
     }
     
+    %% 결제 테이블 - 구독 결제 내역 관리
     PAYMENTS {
-        bigint id PK
-        bigint subscription_id FK
-        bigint tenant_id FK
-        decimal amount
-        enum payment_type
-        enum status
-        varchar payment_method_id
-        varchar transaction_id
-        text failure_reason
-        timestamp payment_date
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "결제 고유 식별자 (자동 증가)"
+        bigint subscription_id FK "관련 구독 ID (NOT NULL, 인덱스)"
+        bigint tenant_id FK "결제 테넌트 ID (NOT NULL, 인덱스)"
+        decimal amount "결제 금액 (원, 소수점 2자리)"
+        enum payment_type "결제 유형 (SUBSCRIPTION/SETUP/PENALTY)"
+        enum status "결제 상태 (PENDING/COMPLETED/FAILED/CANCELLED)"
+        varchar payment_method_id "사용된 결제 수단 ID"
+        varchar transaction_id "PG사 거래 ID (유니크)"
+        varchar pg_provider "PG사 (TOSS/KAKAO/NAVER)"
+        text failure_reason "결제 실패 사유 (실패 시에만)"
+        timestamp payment_date "결제 처리 일시"
+        timestamp due_date "결제 만료일"
+        json receipt_data "영수증 데이터 (JSON 객체)"
+        timestamp created_at "결제 생성 일시"
+        timestamp updated_at "결제 정보 수정 일시"
     }
     
+    %% 결제 수단 테이블 - 테넌트별 등록된 결제 수단
     PAYMENT_METHODS {
-        varchar id PK
-        bigint tenant_id FK
-        enum type
-        varchar provider
-        varchar account_info
-        boolean is_default
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
+        varchar id PK "결제 수단 고유 식별자 (UUID)"
+        bigint tenant_id FK "소유 테넌트 ID (NOT NULL, 인덱스)"
+        enum type "결제 수단 타입 (CARD/BANK/VIRTUAL)"
+        varchar provider "결제 제공자 (TOSS/KAKAO/NAVER)"
+        varchar account_info "계좌/카드 정보 (마스킹된 정보)"
+        varchar billing_key "PG사 빌링키 (자동 결제용)"
+        boolean is_default "기본 결제 수단 여부"
+        boolean is_active "결제 수단 활성화 상태"
+        timestamp last_used_at "마지막 사용 시간"
+        timestamp expires_at "결제 수단 만료일 (카드의 경우)"
+        timestamp created_at "결제 수단 등록 일시"
+        timestamp updated_at "결제 수단 수정 일시"
     }
     
+    %% 출입 기록 테이블 - 얼굴 인식 기반 출입 관리
     ATTENDANCE_LOGS {
-        bigint id PK
-        bigint user_id FK
-        bigint tenant_id FK
-        bigint site_id FK
-        timestamp check_in_time
-        timestamp check_out_time
-        enum type
-        varchar face_match_result
-        varchar gps_location
-        text notes
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "출입 기록 고유 식별자 (자동 증가)"
+        bigint user_id FK "출입 사용자 ID (NOT NULL, 인덱스)"
+        bigint tenant_id FK "소속 테넌트 ID (NOT NULL, 인덱스)"
+        bigint site_id FK "출입 현장 ID (NOT NULL, 인덱스)"
+        timestamp check_in_time "출근 시간"
+        timestamp check_out_time "퇴근 시간 (NULL 가능)"
+        enum type "출입 타입 (NORMAL/OVERTIME/HOLIDAY)"
+        varchar face_match_result "얼굴 매칭 결과 (MATCHED/FAILED/MANUAL)"
+        decimal face_confidence "얼굴 인식 신뢰도 (0.0~1.0)"
+        varchar gps_location "GPS 좌표 (위도,경도)"
+        varchar device_info "출입 기록 장치 정보"
+        text notes "특이사항 메모"
+        boolean is_valid "유효한 출입 기록 여부"
+        timestamp created_at "기록 생성 일시"
+        timestamp updated_at "기록 수정 일시"
     }
     
+    %% 현장 테이블 - 건설 현장 정보 관리
     SITES {
-        bigint id PK
-        bigint tenant_id FK
-        varchar site_name
-        varchar address
-        varchar gps_coordinates
-        varchar manager_name
-        varchar manager_phone
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "현장 고유 식별자 (자동 증가)"
+        bigint tenant_id FK "소속 테넌트 ID (NOT NULL, 인덱스)"
+        varchar site_name "현장명 (최대 100자)"
+        varchar site_code "현장 코드 (테넌트 내 유니크)"
+        varchar address "현장 주소 (최대 200자)"
+        varchar gps_coordinates "GPS 좌표 (위도,경도)"
+        varchar manager_name "현장 관리자명"
+        varchar manager_phone "현장 관리자 연락처"
+        varchar manager_email "현장 관리자 이메일"
+        date start_date "공사 시작일"
+        date end_date "공사 종료일 (예정)"
+        enum status "현장 상태 (ACTIVE/COMPLETED/SUSPENDED)"
+        boolean is_active "현장 활성화 상태"
+        json working_hours "근무 시간 설정 (JSON 객체)"
+        timestamp created_at "현장 생성 일시"
+        timestamp updated_at "현장 정보 수정 일시"
     }
     
-    TENANTS ||--o{ USERS : "has"
-    TENANTS ||--o{ SUBSCRIPTIONS : "has"
-    TENANTS ||--o{ NOTIFICATIONS : "receives"
-    TENANTS ||--o{ PAYMENTS : "makes"
-    TENANTS ||--o{ PAYMENT_METHODS : "has"
-    TENANTS ||--o{ ATTENDANCE_LOGS : "tracks"
-    TENANTS ||--o{ SITES : "manages"
+    %% 테이블 간 관계 정의 (외래키 제약조건)
+    TENANTS ||--o{ USERS : "테넌트는 여러 사용자를 가질 수 있음"
+    TENANTS ||--o{ SUBSCRIPTIONS : "테넌트는 여러 구독을 가질 수 있음 (이력 관리)"
+    TENANTS ||--o{ NOTIFICATIONS : "테넌트는 여러 알림을 받을 수 있음"
+    TENANTS ||--o{ PAYMENTS : "테넌트는 여러 결제를 수행함"
+    TENANTS ||--o{ PAYMENT_METHODS : "테넌트는 여러 결제 수단을 등록할 수 있음"
+    TENANTS ||--o{ ATTENDANCE_LOGS : "테넌트는 여러 출입 기록을 추적함"
+    TENANTS ||--o{ SITES : "테넌트는 여러 현장을 관리함"
     
-    SUBSCRIPTION_PLANS ||--o{ SUBSCRIPTIONS : "defines"
+    SUBSCRIPTION_PLANS ||--o{ SUBSCRIPTIONS : "플랜은 여러 구독에서 사용됨"
     
-    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_APPROVALS : "has"
-    SUBSCRIPTIONS ||--o{ PAYMENTS : "generates"
+    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_APPROVALS : "구독은 여러 승인 이력을 가짐"
+    SUBSCRIPTIONS ||--o{ PAYMENTS : "구독은 여러 결제를 생성함"
     
-    USERS ||--o{ SUBSCRIPTION_APPROVALS : "processes"
-    USERS ||--o{ SUBSCRIPTIONS : "approves"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-    USERS ||--o{ ATTENDANCE_LOGS : "creates"
+    USERS ||--o{ SUBSCRIPTION_APPROVALS : "사용자는 여러 승인을 처리할 수 있음"
+    USERS ||--o{ SUBSCRIPTIONS : "사용자는 구독을 승인할 수 있음 (approved_by)"
+    USERS ||--o{ NOTIFICATIONS : "사용자는 여러 알림을 받음"
+    USERS ||--o{ ATTENDANCE_LOGS : "사용자는 여러 출입 기록을 생성함"
     
-    SITES ||--o{ ATTENDANCE_LOGS : "records"
+    SITES ||--o{ ATTENDANCE_LOGS : "현장은 여러 출입 기록을 가짐"
+    PAYMENT_METHODS ||--o{ PAYMENTS : "결제 수단은 여러 결제에서 사용됨"
 ```
+
+### 데이터베이스 설계 특징
+
+#### 1. 멀티테넌트 아키텍처 지원
+- **테넌트별 데이터 격리**: 모든 비즈니스 테이블에 `tenant_id` 컬럼 포함
+- **자동 필터링**: JPA에서 테넌트 기반 자동 쿼리 필터링 적용
+- **데이터 보안**: 테넌트 간 데이터 접근 완전 차단
+- **확장성**: 향후 테넌트별 데이터베이스 샤딩 지원 가능
+
+#### 2. 구독 관리 시스템
+- **구독 생명주기**: 신청 → 승인 → 활성 → 갱신/종료의 완전한 워크플로우
+- **승인 추적**: 모든 승인 관련 액션의 상세 이력 관리
+- **자동 승인**: 규칙 기반 자동 승인 시스템으로 운영 효율성 향상
+- **결제 연동**: 구독과 결제의 완전한 연동 및 추적
+
+#### 3. 사용자 관리 및 인증
+- **멀티 로그인**: 일반 로그인과 소셜 로그인 통합 지원
+- **역할 기반 접근 제어**: 5단계 사용자 역할 시스템
+- **얼굴 인식**: FaceNet 임베딩 벡터 저장으로 출입 관리 연동
+- **보안 강화**: 로그인 실패 추적, 계정 잠금 등 보안 기능
+
+#### 4. 출입 관리 시스템
+- **얼굴 인식 기반**: 자동 출입 인식 및 기록
+- **GPS 연동**: 위치 기반 출입 검증
+- **현장별 관리**: 여러 현장의 독립적인 출입 관리
+- **근무 시간 추적**: 정확한 근무 시간 계산 및 관리
+
+#### 5. 알림 및 커뮤니케이션
+- **실시간 알림**: 사용자별 맞춤 알림 시스템
+- **타입별 분류**: 구독, 결제, 시스템, 출입 등 타입별 알림
+- **우선순위 관리**: 알림 중요도에 따른 우선순위 처리
+- **만료 관리**: 알림 자동 만료 및 정리
+
+#### 6. 결제 시스템
+- **다중 PG 지원**: 여러 결제 게이트웨이 통합 지원
+- **자동 결제**: 빌링키 기반 정기 결제 자동화
+- **결제 추적**: 완전한 결제 이력 및 상태 관리
+- **실패 처리**: 결제 실패 시 자동 재시도 및 알림
+
+#### 7. 성능 최적화
+- **인덱스 전략**: 
+  - `tenant_id` 기반 복합 인덱스로 멀티테넌트 쿼리 최적화
+  - 자주 조회되는 컬럼 조합에 대한 복합 인덱스
+  - 시간 기반 쿼리를 위한 타임스탬프 인덱스
+
+- **파티셔닝**: 
+  - 대용량 테이블 (ATTENDANCE_LOGS, NOTIFICATIONS)의 월별 파티셔닝
+  - 테넌트별 데이터 분산으로 쿼리 성능 향상
+
+- **아카이빙**: 
+  - 오래된 데이터의 자동 아카이빙 정책
+  - 성능 유지를 위한 데이터 생명주기 관리
+
+#### 8. 데이터 무결성
+- **외래키 제약조건**: 모든 관계에 대한 참조 무결성 보장
+- **체크 제약조건**: 비즈니스 규칙 기반 데이터 검증
+- **트리거**: 복잡한 비즈니스 로직의 데이터베이스 레벨 구현
+- **트랜잭션**: ACID 속성을 통한 데이터 일관성 보장
+
+#### 9. 감사 및 추적
+- **생성/수정 시간**: 모든 테이블에 타임스탬프 자동 관리
+- **변경 이력**: 중요 데이터의 변경 이력 추적
+- **사용자 추적**: 데이터 변경 시 변경자 정보 기록
+- **로그 테이블**: 중요 액션에 대한 별도 로그 테이블 운영
+
+이러한 데이터베이스 설계는 SmartCON Lite의 멀티테넌트 SaaS 요구사항을 완벽히 지원하며, 확장성과 성능을 동시에 보장합니다.
 
 ## 7. 시퀀스 다이어그램 - 구독 승인 프로세스
 
+### 구독 승인 워크플로우 개요
+이 시퀀스 다이어그램은 SmartCON Lite의 핵심 비즈니스 프로세스인 구독 승인 워크플로우를 상세히 보여줍니다.
+슈퍼 관리자가 승인 대기 중인 구독을 조회하고 승인 처리하는 전체 과정을 단계별로 설명합니다.
+
 ```mermaid
 sequenceDiagram
-    participant U as User (Frontend)
-    participant C as SubscriptionApprovalController
-    participant S as SubscriptionApprovalService
-    participant SR as SubscriptionRepository
-    participant AR as SubscriptionApprovalRepository
-    participant NS as NotificationService
-    participant DB as Database
+    participant U as User (Frontend)<br/>슈퍼 관리자 웹 인터페이스
+    participant C as SubscriptionApprovalController<br/>구독 승인 REST API 컨트롤러
+    participant S as SubscriptionApprovalService<br/>구독 승인 비즈니스 로직 서비스
+    participant SR as SubscriptionRepository<br/>구독 데이터 접근 계층
+    participant AR as SubscriptionApprovalRepository<br/>승인 이력 데이터 접근 계층
+    participant NS as NotificationService<br/>알림 발송 서비스
+    participant DB as Database<br/>MariaDB 데이터베이스
     
-    U->>C: GET /api/v1/admin/subscription-approvals/pending
-    C->>S: getPendingApprovals(pageable)
-    S->>SR: findByStatusOrderByCreatedAtDesc(PENDING_APPROVAL, pageable)
-    SR->>DB: SELECT * FROM subscriptions WHERE status = 'PENDING_APPROVAL'
-    DB-->>SR: Subscription records
-    SR-->>S: Page<Subscription>
-    S-->>C: Page<SubscriptionDto>
-    C-->>U: ResponseEntity<Page<SubscriptionDto>>
+    Note over U, DB: 1단계: 승인 대기 목록 조회 프로세스
+    U->>C: GET /api/v1/admin/subscription-approvals/pending<br/>승인 대기 중인 구독 목록 요청 (페이지네이션 포함)
+    Note right of U: 슈퍼 관리자가 승인 페이지 접속<br/>페이지 크기, 정렬 조건 등 포함
     
-    U->>C: POST /api/v1/admin/subscription-approvals/{id}/approve
-    C->>S: approveSubscription(subscriptionId, reason)
-    S->>SR: findById(subscriptionId)
-    SR->>DB: SELECT * FROM subscriptions WHERE id = ?
-    DB-->>SR: Subscription
-    SR-->>S: Subscription
+    C->>S: getPendingApprovals(pageable)<br/>페이지네이션 파라미터와 함께 서비스 호출
+    Note right of C: 컨트롤러에서 요청 검증 및<br/>서비스 계층으로 위임
     
-    S->>S: subscription.approve(approver)
-    S->>SR: save(subscription)
-    SR->>DB: UPDATE subscriptions SET status = 'ACTIVE', approved_at = ?, approved_by = ?
+    S->>SR: findByStatusOrderByCreatedAtDesc(PENDING_APPROVAL, pageable)<br/>승인 대기 상태의 구독을 생성일 역순으로 조회
+    Note right of S: 비즈니스 로직: 승인 대기 상태만 필터링<br/>최신 신청 순으로 정렬
     
-    S->>AR: save(approvalHistory)
-    AR->>DB: INSERT INTO subscription_approvals
+    SR->>DB: SELECT * FROM subscriptions<br/>WHERE status = 'PENDING_APPROVAL'<br/>AND tenant_id IN (허용된 테넌트 목록)<br/>ORDER BY created_at DESC<br/>LIMIT ? OFFSET ?
+    Note right of SR: JPA 쿼리 실행<br/>멀티테넌트 필터링 자동 적용<br/>페이지네이션 처리
     
-    S->>NS: sendApprovalNotification(subscription)
-    NS->>DB: INSERT INTO notifications
+    DB-->>SR: Subscription records<br/>승인 대기 중인 구독 레코드 목록
+    Note left of DB: 데이터베이스에서 조건에 맞는<br/>구독 데이터 반환
     
-    S-->>C: SubscriptionDto
-    C-->>U: ResponseEntity<SubscriptionDto>
+    SR-->>S: Page<Subscription><br/>페이지네이션된 구독 엔티티 목록
+    Note left of SR: JPA 엔티티를 서비스로 반환<br/>페이지 메타데이터 포함
+    
+    S-->>C: Page<SubscriptionDto><br/>DTO로 변환된 구독 정보 페이지
+    Note left of S: 엔티티를 DTO로 변환<br/>민감한 정보 제외 처리
+    
+    C-->>U: ResponseEntity<Page<SubscriptionDto>><br/>HTTP 200 OK + JSON 응답
+    Note left of C: REST API 표준 응답 형식<br/>성공 상태 코드와 함께 반환
+    
+    Note over U, DB: 2단계: 구독 승인 처리 프로세스
+    U->>C: POST /api/v1/admin/subscription-approvals/{id}/approve<br/>특정 구독 승인 요청 (승인 사유 포함)
+    Note right of U: 관리자가 승인 버튼 클릭<br/>승인 사유 입력 후 제출
+    
+    C->>S: approveSubscription(subscriptionId, reason)<br/>구독 ID와 승인 사유로 서비스 호출
+    Note right of C: 요청 파라미터 검증<br/>인증된 관리자 권한 확인
+    
+    S->>SR: findById(subscriptionId)<br/>승인 대상 구독 조회
+    Note right of S: 구독 존재 여부 및<br/>현재 상태 확인
+    
+    SR->>DB: SELECT * FROM subscriptions<br/>WHERE id = ? AND tenant_id = ?
+    Note right of SR: 기본키 조회 + 테넌트 검증<br/>보안을 위한 이중 확인
+    
+    DB-->>SR: Subscription<br/>해당 구독 엔티티
+    Note left of DB: 요청된 구독 데이터 반환<br/>존재하지 않으면 NULL
+    
+    SR-->>S: Subscription<br/>조회된 구독 엔티티
+    Note left of SR: 엔티티 반환<br/>없으면 예외 발생
+    
+    Note over S: 비즈니스 로직 처리<br/>- 구독 상태 검증<br/>- 승인 가능 여부 확인<br/>- 승인자 정보 설정
+    S->>S: subscription.approve(approver)<br/>구독 엔티티의 승인 메서드 호출
+    Note right of S: 도메인 로직 실행:<br/>상태를 ACTIVE로 변경<br/>승인 시간 및 승인자 설정
+    
+    S->>SR: save(subscription)<br/>승인 처리된 구독 저장
+    Note right of S: 트랜잭션 내에서<br/>구독 상태 업데이트
+    
+    SR->>DB: UPDATE subscriptions<br/>SET status = 'ACTIVE',<br/>approved_at = ?,<br/>approved_by = ?<br/>WHERE id = ?
+    Note right of SR: 구독 테이블 업데이트<br/>낙관적 락 버전 체크 포함
+    
+    Note over S: 승인 이력 기록 생성
+    S->>AR: save(approvalHistory)<br/>승인 이력 엔티티 저장
+    Note right of S: 감사 추적을 위한<br/>승인 이력 기록 생성
+    
+    AR->>DB: INSERT INTO subscription_approvals<br/>(subscription_id, admin_id, from_status,<br/>to_status, reason, action, processed_at)<br/>VALUES (?, ?, 'PENDING_APPROVAL',<br/>'ACTIVE', ?, 'APPROVE', NOW())
+    Note right of AR: 승인 이력 테이블에<br/>상세 승인 정보 기록
+    
+    Note over S: 관련자 알림 발송
+    S->>NS: sendApprovalNotification(subscription)<br/>승인 완료 알림 발송 요청
+    Note right of S: 비동기 알림 처리<br/>테넌트 관리자에게 승인 완료 통지
+    
+    NS->>DB: INSERT INTO notifications<br/>(user_id, tenant_id, type, title,<br/>message, data, created_at)<br/>VALUES (?, ?, 'SUBSCRIPTION',<br/>'구독 승인 완료', ?, ?, NOW())
+    Note right of NS: 알림 테이블에 알림 생성<br/>실시간 알림 시스템 연동
+    
+    Note over S: 최종 응답 준비
+    S-->>C: SubscriptionDto<br/>승인 처리된 구독 정보 DTO
+    Note left of S: 업데이트된 구독 정보를<br/>DTO로 변환하여 반환
+    
+    C-->>U: ResponseEntity<SubscriptionDto><br/>HTTP 200 OK + 승인 완료된 구독 정보
+    Note left of C: 성공 응답과 함께<br/>업데이트된 구독 상태 반환
+    
+    Note over U: UI 업데이트<br/>- 승인 완료 메시지 표시<br/>- 목록에서 해당 항목 제거<br/>- 성공 토스트 알림
 ```
+
+### 시퀀스 다이어그램 상세 분석
+
+#### 1단계: 승인 대기 목록 조회 프로세스
+
+**목적**: 슈퍼 관리자가 승인이 필요한 구독 신청 목록을 확인하는 과정
+
+**주요 특징**:
+- **페이지네이션 지원**: 대량의 승인 대기 건을 효율적으로 처리
+- **자동 정렬**: 최신 신청 순으로 정렬하여 우선순위 관리
+- **멀티테넌트 필터링**: 자동으로 테넌트별 데이터 격리 적용
+- **DTO 변환**: 민감한 정보 제외하고 필요한 정보만 전달
+
+**성능 최적화**:
+- 인덱스 활용: `status` + `created_at` 복합 인덱스로 빠른 조회
+- 지연 로딩: 연관 엔티티는 필요시에만 로드
+- 캐시 활용: 자주 조회되는 데이터는 Redis 캐시 적용
+
+#### 2단계: 구독 승인 처리 프로세스
+
+**목적**: 관리자의 승인 결정을 시스템에 반영하고 관련 프로세스를 실행하는 과정
+
+**주요 특징**:
+- **트랜잭션 보장**: 모든 데이터 변경이 원자적으로 처리
+- **도메인 로직 적용**: 엔티티 내부의 비즈니스 규칙 실행
+- **감사 추적**: 모든 승인 액션의 상세 이력 기록
+- **실시간 알림**: 승인 완료 즉시 관련자에게 알림 발송
+
+**보안 고려사항**:
+- **권한 검증**: 승인 권한이 있는 관리자만 접근 가능
+- **테넌트 검증**: 구독 조회 시 테넌트 소속 확인
+- **상태 검증**: 승인 가능한 상태인지 사전 확인
+- **낙관적 락**: 동시 수정 방지를 위한 버전 체크
+
+#### 비즈니스 로직 흐름
+
+**승인 전 검증 단계**:
+1. 구독 존재 여부 확인
+2. 현재 상태가 승인 가능한지 검증 (PENDING_APPROVAL)
+3. 관리자 권한 확인
+4. 테넌트 소속 검증
+
+**승인 처리 단계**:
+1. 구독 상태를 ACTIVE로 변경
+2. 승인 시간 및 승인자 정보 설정
+3. 승인 이력 기록 생성
+4. 데이터베이스 트랜잭션 커밋
+
+**후속 처리 단계**:
+1. 테넌트 관리자에게 승인 완료 알림 발송
+2. 구독 활성화에 따른 서비스 접근 권한 부여
+3. 결제 스케줄 설정 (다음 결제일 계산)
+4. 시스템 로그 기록
+
+#### 에러 처리 시나리오
+
+**일반적인 에러 상황**:
+- **구독 미존재**: 404 Not Found 응답
+- **권한 부족**: 403 Forbidden 응답
+- **잘못된 상태**: 400 Bad Request 응답 (이미 처리된 구독)
+- **동시 수정**: 409 Conflict 응답 (낙관적 락 충돌)
+- **데이터베이스 오류**: 500 Internal Server Error 응답
+
+**에러 복구 메커니즘**:
+- **트랜잭션 롤백**: 오류 발생 시 모든 변경사항 자동 롤백
+- **재시도 로직**: 일시적 오류에 대한 자동 재시도
+- **알림 실패 처리**: 알림 발송 실패 시 큐에 저장 후 재시도
+- **로그 기록**: 모든 에러 상황의 상세 로그 기록
+
+#### 성능 및 확장성 고려사항
+
+**데이터베이스 최적화**:
+- **인덱스 전략**: 자주 사용되는 쿼리 패턴에 맞는 복합 인덱스
+- **쿼리 최적화**: N+1 문제 방지를 위한 페치 조인 활용
+- **연결 풀 관리**: 적절한 커넥션 풀 크기 설정
+
+**캐시 전략**:
+- **조회 캐시**: 승인 대기 목록의 단기 캐시 적용
+- **세션 캐시**: 관리자 권한 정보 캐시
+- **무효화 전략**: 데이터 변경 시 관련 캐시 자동 무효화
+
+**비동기 처리**:
+- **알림 발송**: 메시지 큐를 통한 비동기 알림 처리
+- **이벤트 발행**: 승인 완료 이벤트 발행으로 다른 시스템 연동
+- **배치 처리**: 대량 승인 시 배치 처리 지원
+
+이 시퀀스 다이어그램은 SmartCON Lite의 구독 승인 프로세스가 어떻게 체계적이고 안전하게 처리되는지를 보여주며, 실제 구현 시 고려해야 할 모든 측면을 포함하고 있습니다.
 
 ## 8. 컴포넌트 상호작용 다이어그램
 
