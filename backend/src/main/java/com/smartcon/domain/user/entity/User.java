@@ -2,6 +2,8 @@ package com.smartcon.domain.user.entity;
 
 import com.smartcon.global.tenant.BaseTenantEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,6 +18,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User extends BaseTenantEntity {
 
     @Column(name = "name", nullable = false, length = 50)

@@ -1,126 +1,208 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
-  CalendarDays,
   Clock,
-  MapPin,
-  UserCircle2,
-  Wallet,
   CheckCircle2,
   AlertCircle,
-  PenTool
+  Calendar,
+  MapPin,
+  Users,
+  FileText,
+  Camera
 } from "lucide-react";
 
 export default function DashboardWorker() {
+  // Mock Data
+  const todayAttendance = {
+    checkIn: "07:30",
+    checkOut: null,
+    workHours: "8시간 30분",
+    status: "출근 중"
+  };
+
+  const weeklyStats = {
+    totalDays: 5,
+    attendedDays: 4,
+    totalHours: 34,
+    overtime: 2
+  };
+
+  const currentSite = {
+    name: "강남 테헤란로 오피스 신축공사",
+    location: "서울시 강남구 테헤란로 123",
+    team: "철근팀",
+    teamLeader: "김철수 팀장"
+  };
+
+  const recentNotices = [
+    { title: "안전교육 필수 이수 안내", date: "2025-01-01", type: "important" },
+    { title: "금주 작업 일정 변경 공지", date: "2024-12-30", type: "info" },
+    { title: "연말 정산 서류 제출 안내", date: "2024-12-28", type: "info" },
+  ];
+
   return (
     <DashboardLayout role="worker">
       <div className="space-y-6">
-        {/* Profile Summary */}
-        <div className="bg-white p-6 rounded-xl border shadow-sm flex flex-col md:flex-row items-center gap-6">
-          <div className="relative">
-            <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
-              <UserCircle2 className="h-20 w-20 text-muted-foreground" />
-            </div>
-            <div className="absolute bottom-0 right-0 h-8 w-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center text-white">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="flex-1 text-center md:text-left space-y-1">
-            <h2 className="text-2xl font-bold">홍길동 (형틀목공)</h2>
-            <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2">
-              <MapPin className="h-4 w-4" /> 강남 테헤란로 오피스 신축공사
-            </p>
-            <div className="flex items-center justify-center md:justify-start gap-2 text-sm">
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">안면인식 등록완료</span>
-              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">기초안전교육 이수</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <Button size="lg" className="w-full md:w-auto bg-green-600 hover:bg-green-700">
-              <Clock className="mr-2 h-5 w-5" /> 출근 체크
-            </Button>
-            <Button variant="outline" className="w-full md:w-auto">
-              <PenTool className="mr-2 h-4 w-4" /> 전자계약 서명하기
-            </Button>
-          </div>
-        </div>
-
-        {/* Monthly Stats */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">이번 달 누적 공수</CardTitle>
-              <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">18.5 <span className="text-lg font-normal text-muted-foreground">공수</span></div>
-              <p className="text-xs text-muted-foreground mt-1">전월 대비 +2.5 공수</p>
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                  <div className="bg-primary h-full" style={{ width: "75%" }}></div>
-                </div>
-                <span className="text-muted-foreground">목표 25공수</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">예상 수령액 (세전)</CardTitle>
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">4,625,000 <span className="text-lg font-normal text-muted-foreground">원</span></div>
-              <p className="text-xs text-muted-foreground mt-1">단가: 250,000원</p>
-              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                <AlertCircle className="h-3 w-3" />
-                <span>실제 지급액은 세금 및 4대보험 공제 후 입금됩니다.</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Attendance */}
+        {/* 오늘 출역 현황 */}
         <Card>
           <CardHeader>
-            <CardTitle>최근 출역 이력</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              오늘 출역 현황
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { date: "2025.12.18 (목)", time: "06:45 ~ 17:00", gongsu: 1.0, site: "강남 테헤란로 오피스", status: "정상" },
-                { date: "2025.12.17 (수)", time: "06:50 ~ 17:00", gongsu: 1.0, site: "강남 테헤란로 오피스", status: "정상" },
-                { date: "2025.12.16 (화)", time: "06:40 ~ 19:00", gongsu: 1.5, site: "강남 테헤란로 오피스", status: "연장" },
-                { date: "2025.12.15 (월)", time: "06:55 ~ 17:00", gongsu: 1.0, site: "강남 테헤란로 오피스", status: "정상" },
-                { date: "2025.12.13 (토)", time: "07:00 ~ 12:00", gongsu: 0.5, site: "강남 테헤란로 오피스", status: "오전" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="space-y-1">
-                    <div className="font-medium flex items-center gap-2">
-                      {item.date}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                        item.status === "연장" ? "bg-purple-50 text-purple-600 border-purple-200" : 
-                        item.status === "오전" ? "bg-orange-50 text-orange-600 border-orange-200" : 
-                        "bg-green-50 text-green-600 border-green-200"
-                      }`}>{item.status}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {item.time}
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{todayAttendance.checkIn}</div>
+                <div className="text-sm text-muted-foreground">출근 시간</div>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {todayAttendance.checkOut || "--:--"}
+                </div>
+                <div className="text-sm text-muted-foreground">퇴근 시간</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{todayAttendance.workHours}</div>
+                <div className="text-sm text-muted-foreground">근무 시간</div>
+              </div>
+              <div className="text-center p-4">
+                <Badge variant={todayAttendance.status === "출근 중" ? "default" : "secondary"} className="text-sm px-3 py-1">
+                  {todayAttendance.status}
+                </Badge>
+                <div className="mt-2">
+                  <Button size="sm" className="w-full">
+                    <Camera className="h-4 w-4 mr-2" />
+                    퇴근 체크
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* 주간 출역 통계 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                이번 주 출역 통계
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">출역 일수</span>
+                <span className="font-semibold">{weeklyStats.attendedDays}/{weeklyStats.totalDays}일</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">총 근무 시간</span>
+                <span className="font-semibold">{weeklyStats.totalHours}시간</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">연장 근무</span>
+                <span className="font-semibold text-orange-600">{weeklyStats.overtime}시간</span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">출역률</span>
+                  <span className="text-lg font-bold text-green-600">
+                    {Math.round((weeklyStats.attendedDays / weeklyStats.totalDays) * 100)}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 현재 배정 현장 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                현재 배정 현장
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="font-semibold">{currentSite.name}</div>
+                <div className="text-sm text-muted-foreground mt-1">{currentSite.location}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{currentSite.team}</span>
+                <Badge variant="outline" className="text-xs">{currentSite.teamLeader}</Badge>
+              </div>
+              <div className="pt-2 border-t">
+                <Button variant="outline" size="sm" className="w-full">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  현장 위치 보기
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 공지사항 및 알림 */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              공지사항 및 알림
+            </CardTitle>
+            <Button variant="ghost" size="sm">전체보기</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentNotices.map((notice, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2 w-2 rounded-full ${
+                      notice.type === "important" ? "bg-red-500" : "bg-blue-500"
+                    }`} />
+                    <div>
+                      <div className="font-medium text-sm">{notice.title}</div>
+                      <div className="text-xs text-muted-foreground">{notice.date}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold text-lg">{item.gongsu} <span className="text-xs font-normal text-muted-foreground">공수</span></div>
-                    <div className="text-xs text-muted-foreground">{item.site}</div>
-                  </div>
+                  {notice.type === "important" && (
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  )}
                 </div>
               ))}
             </div>
-            <Button variant="ghost" className="w-full mt-4 text-muted-foreground">더 보기</Button>
+          </CardContent>
+        </Card>
+
+        {/* 빠른 액션 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>빠른 액션</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Calendar className="h-6 w-6" />
+                <span className="text-sm">출역 조회</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">전자 계약</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Users className="h-6 w-6" />
+                <span className="text-sm">팀원 현황</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <CheckCircle2 className="h-6 w-6" />
+                <span className="text-sm">안전교육</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
     </DashboardLayout>
   );
 }
-

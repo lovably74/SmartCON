@@ -48,15 +48,15 @@ class SubscriptionAccessControlPropertyTest {
         subscriptionAccessControlService = new SubscriptionAccessControlServiceImpl(subscriptionRepository, tenantRepository);
         
         // 테스트용 테넌트 생성
-        testTenant = new Tenant();
-        testTenant.setBusinessNo("123-45-67890");
-        testTenant.setCompanyName("테스트 회사");
-        testTenant.setRepresentativeName("홍길동");
-        testTenant.setEmail("test@example.com");
-        testTenant.setPhoneNumber("010-1234-5678");
-        testTenant.setRoadAddress("서울시 강남구");
-        // ID 설정 (실제로는 JPA가 설정하지만 테스트에서는 수동 설정)
-        testTenant.setId(1L);
+        testTenant = Tenant.builder()
+                .businessNo("123-45-67890")
+                .companyName("테스트 회사")
+                .representativeName("홍길동")
+                .email("test@example.com")
+                .phoneNumber("010-1234-5678")
+                .roadAddress("서울시 강남구")
+                .build();
+        testTenant.setId(1L); // ID 설정 (실제로는 JPA가 설정하지만 테스트에서는 수동 설정)
 
         // 테스트용 구독 플랜 생성
         testPlan = SubscriptionPlan.builder()

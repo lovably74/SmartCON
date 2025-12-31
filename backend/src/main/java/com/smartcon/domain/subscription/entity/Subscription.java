@@ -5,9 +5,11 @@ import com.smartcon.domain.user.entity.User;
 import com.smartcon.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,7 +24,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "subscriptions")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Setter
+@NoArgsConstructor(access = AccessLevel.PUBLIC) // 테스트를 위해 public으로 변경
+@AllArgsConstructor
 public class Subscription extends BaseEntity {
     
     @Id

@@ -1,162 +1,280 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar as CalendarIcon, Clock, Download, Filter, Search, UserCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Users,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Search,
+  Filter,
+  Download,
+  Camera,
+  AlertTriangle
+} from "lucide-react";
+import { useState } from "react";
 
 export default function AttendanceSite() {
-  const attendance = [
-    { id: 1, name: "홍길동", team: "A팀(형틀)", timeIn: "06:45", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 2, name: "김철수", team: "A팀(형틀)", timeIn: "06:50", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 3, name: "이영희", team: "B팀(철근)", timeIn: "06:40", timeOut: "17:00", status: "퇴근", gongsu: 1.0, method: "안면인식" },
-    { id: 4, name: "박민수", team: "B팀(철근)", timeIn: "06:55", timeOut: "19:00", status: "퇴근", gongsu: 1.5, method: "수기입력" },
-    { id: 5, name: "Zhang Wei", team: "C팀(조적)", timeIn: "07:00", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 6, name: "최준호", team: "C팀(조적)", timeIn: "06:30", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 7, name: "정다은", team: "안전팀", timeIn: "08:00", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 8, name: "Nguyen Van", team: "D팀(비계)", timeIn: "07:10", timeOut: "12:00", status: "조퇴", gongsu: 0.5, method: "안면인식" },
-    { id: 9, name: "강호동", team: "장비팀", timeIn: "06:20", timeOut: "-", status: "작업중", gongsu: 1.0, method: "안면인식" },
-    { id: 10, name: "유재석", team: "안전팀", timeIn: "07:50", timeOut: "17:00", status: "퇴근", gongsu: 1.0, method: "안면인식" },
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Mock Data
+  const todayAttendance = [
+    { id: 1, name: "김철수", team: "철근팀", checkIn: "07:30", checkOut: null, status: "출근", photo: true },
+    { id: 2, name: "이영희", team: "콘크리트팀", checkIn: "07:45", checkOut: null, status: "지각", photo: true },
+    { id: 3, name: "박민수", team: "철근팀", checkIn: "07:25", checkOut: "17:30", status: "퇴근", photo: true },
+    { id: 4, name: "정수진", team: "전기팀", checkIn: null, checkOut: null, status: "결근", photo: false },
+    { id: 5, name: "최동호", team: "배관팀", checkIn: "08:00", checkOut: null, status: "지각", photo: true },
   ];
+
+  const teamStats = [
+    { team: "철근팀", total: 25, present: 22, late: 2, absent: 1, rate: 88 },
+    { team: "콘크리트팀", total: 30, present: 28, late: 1, absent: 1, rate: 93 },
+    { team: "목공팀", total: 20, present: 18, late: 1, absent: 1, rate: 90 },
+    { team: "전기팀", total: 15, present: 12, late: 2, absent: 1, rate: 80 },
+    { team: "배관팀", total: 18, present: 15, late: 1, absent: 2, rate: 83 },
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "출근": return "bg-green-100 text-green-700";
+      case "퇴근": return "bg-blue-100 text-blue-700";
+      case "지각": return "bg-orange-100 text-orange-700";
+      case "결근": return "bg-red-100 text-red-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "출근": return <CheckCircle2 className="h-4 w-4" />;
+      case "퇴근": return <CheckCircle2 className="h-4 w-4" />;
+      case "지각": return <Clock className="h-4 w-4" />;
+      case "결근": return <XCircle className="h-4 w-4" />;
+      default: return <AlertTriangle className="h-4 w-4" />;
+    }
+  };
+
+  const filteredAttendance = todayAttendance.filter(worker =>
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.team.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <DashboardLayout role="site">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">출역 관리</h2>
-            <p className="text-muted-foreground">금일 현장 출역 현황을 실시간으로 모니터링합니다.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <CalendarIcon className="mr-2 h-4 w-4" /> 날짜 선택
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" /> 엑셀 다운로드
-            </Button>
-            <Button>
-              <UserCheck className="mr-2 h-4 w-4" /> 수기 출근 등록
-            </Button>
-          </div>
-        </div>
-
+        {/* 출역 현황 요약 */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">총 출역 인원</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">145명</div>
-              <p className="text-xs text-muted-foreground">계획 대비 96%</p>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">총 인원</p>
+                <div className="text-3xl font-bold mt-2">108</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <Users className="h-6 w-6" />
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">작업 중</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">112명</div>
-              <p className="text-xs text-muted-foreground">현재 현장 체류</p>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">출근</p>
+                <div className="text-3xl font-bold text-green-600 mt-2">95</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">퇴근 완료</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">33명</div>
-              <p className="text-xs text-muted-foreground">정상 퇴근 처리</p>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">지각</p>
+                <div className="text-3xl font-bold text-orange-600 mt-2">7</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                <Clock className="h-6 w-6" />
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">예외 발생</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">2건</div>
-              <p className="text-xs text-muted-foreground">미인식 / 중복 등</p>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">결근</p>
+                <div className="text-3xl font-bold text-red-600 mt-2">6</div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                <XCircle className="h-6 w-6" />
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        <Tabs defaultValue="individual" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="individual">개별 출역 현황</TabsTrigger>
+            <TabsTrigger value="team">팀별 출역 현황</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="individual" className="space-y-6">
+            {/* 검색 및 필터 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>개별 출역 관리</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4 mb-6">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="이름이나 팀명으로 검색..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    필터
+                  </Button>
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    엑셀 다운로드
+                  </Button>
+                </div>
+
+                {/* 출역 목록 */}
+                <div className="space-y-3">
+                  {filteredAttendance.map((worker) => (
+                    <div key={worker.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                          {worker.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-semibold">{worker.name}</div>
+                          <div className="text-sm text-muted-foreground">{worker.team}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right text-sm">
+                          <div className="font-medium">
+                            {worker.checkIn || "--:--"} ~ {worker.checkOut || "--:--"}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {worker.photo ? "안면인식 완료" : "수동 입력"}
+                          </div>
+                        </div>
+
+                        <Badge className={getStatusColor(worker.status)}>
+                          {getStatusIcon(worker.status)}
+                          <span className="ml-1">{worker.status}</span>
+                        </Badge>
+
+                        <div className="flex gap-2">
+                          {worker.status === "출근" && (
+                            <Button size="sm" variant="outline">
+                              <Camera className="h-4 w-4 mr-1" />
+                              퇴근 처리
+                            </Button>
+                          )}
+                          {worker.status === "결근" && (
+                            <Button size="sm">
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              출근 처리
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="team" className="space-y-6">
+            {/* 팀별 출역 현황 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>팀별 출역 현황</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {teamStats.map((team, i) => (
+                    <div key={i} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                            {team.team.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-semibold">{team.team}</div>
+                            <div className="text-sm text-muted-foreground">총 {team.total}명</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold">{team.rate}%</div>
+                          <div className="text-sm text-muted-foreground">출역률</div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="p-3 bg-green-50 rounded-lg">
+                          <div className="text-lg font-bold text-green-600">{team.present}</div>
+                          <div className="text-xs text-muted-foreground">출근</div>
+                        </div>
+                        <div className="p-3 bg-orange-50 rounded-lg">
+                          <div className="text-lg font-bold text-orange-600">{team.late}</div>
+                          <div className="text-xs text-muted-foreground">지각</div>
+                        </div>
+                        <div className="p-3 bg-red-50 rounded-lg">
+                          <div className="text-lg font-bold text-red-600">{team.absent}</div>
+                          <div className="text-xs text-muted-foreground">결근</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* 빠른 액션 */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>출역 상세 내역</CardTitle>
-              <div className="flex w-full max-w-md items-center space-x-2">
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <Input placeholder="이름 또는 팀명 검색" />
-                <Button size="icon" variant="ghost">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle>빠른 액션</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>이름</TableHead>
-                  <TableHead>소속 팀</TableHead>
-                  <TableHead>출근 시간</TableHead>
-                  <TableHead>퇴근 시간</TableHead>
-                  <TableHead>인증 방식</TableHead>
-                  <TableHead>공수</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attendance.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.id}`} />
-                          <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        {item.name}
-                      </div>
-                    </TableCell>
-                    <TableCell>{item.team}</TableCell>
-                    <TableCell>{item.timeIn}</TableCell>
-                    <TableCell>{item.timeOut}</TableCell>
-                    <TableCell>
-                      <span className="text-xs text-muted-foreground">{item.method}</span>
-                    </TableCell>
-                    <TableCell>{item.gongsu}</TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        item.status === "작업중" ? "default" :
-                        item.status === "퇴근" ? "secondary" : "outline"
-                      } className={
-                        item.status === "작업중" ? "bg-green-500 hover:bg-green-600" : ""
-                      }>
-                        {item.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">수정</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Camera className="h-6 w-6" />
+                <span className="text-sm">일괄 출근 처리</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Download className="h-6 w-6" />
+                <span className="text-sm">출역 보고서</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <AlertTriangle className="h-6 w-6" />
+                <span className="text-sm">결근자 알림</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <CheckCircle2 className="h-6 w-6" />
+                <span className="text-sm">출역 승인</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
     </DashboardLayout>
   );
 }
-

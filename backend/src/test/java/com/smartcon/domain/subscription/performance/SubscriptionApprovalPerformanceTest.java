@@ -211,7 +211,7 @@ class SubscriptionApprovalPerformanceTest {
     }
     
     @Test
-    void testMemoryUsageUnderLoad() {
+    void testMemoryUsageUnderLoad() throws InterruptedException {
         // Given: 메모리 사용량 측정 시작
         Runtime runtime = Runtime.getRuntime();
         long initialMemory = runtime.totalMemory() - runtime.freeMemory();

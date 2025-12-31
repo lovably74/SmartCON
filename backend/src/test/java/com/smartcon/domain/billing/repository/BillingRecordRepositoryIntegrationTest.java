@@ -40,6 +40,7 @@ class BillingRecordRepositoryIntegrationTest extends BaseIntegrationTest {
         billingRecord.setBillingPeriodStart(LocalDate.now().minusMonths(1));
         billingRecord.setBillingPeriodEnd(LocalDate.now());
         billingRecord.setBaseAmount(BigDecimal.valueOf(50000));
+        billingRecord.setPlanAmount(BigDecimal.valueOf(45000)); // plan_amount 필드 추가
         billingRecord.setTaxAmount(BigDecimal.valueOf(5000));
         billingRecord.setTotalAmount(BigDecimal.valueOf(55000));
         billingRecord.setPaymentStatus(BillingRecord.PaymentStatus.SUCCESS);
@@ -200,6 +201,7 @@ class BillingRecordRepositoryIntegrationTest extends BaseIntegrationTest {
         billingRecord.setBillingPeriodStart(LocalDate.now().minusMonths(1));
         billingRecord.setBillingPeriodEnd(LocalDate.now());
         billingRecord.setBaseAmount(BigDecimal.valueOf(50000));
+        billingRecord.setPlanAmount(BigDecimal.valueOf(45000)); // plan_amount 필드 추가
         billingRecord.setTaxAmount(BigDecimal.valueOf(5000));
         billingRecord.setTotalAmount(BigDecimal.valueOf(55000));
         billingRecord.setPaymentStatus(status);
