@@ -15,19 +15,23 @@ async function globalTeardown(_config: FullConfig) {
   const page = await context.newPage();
   
   try {
-    // 테스트 데이터 정리
+    // 테스트 데이터 정리 (백엔드가 실행 중일 때만)
     console.log('🗑️ 테스트 데이터 정리...');
-    await page.goto('http://localhost:8080/api/test/cleanup-data', { 
-      waitUntil: 'networkidle' 
-    });
+    try {
+      await page.goto('http://localhost:8080/api/test/cleanup-data', { 
+        waitUntil: 'networkidle' 
+      });
+    } catch (cleanupError) {
+      console.log('⚠️ 백엔드 서버에 연결할 수 없어 데이터 정리를 건너뜁니다.');
+    }
     
     // 테스트 결과 요약 출력
     console.log('📊 테스트 결과 요약 생성...');
     
     // 테스트 결과 파일이 있다면 요약 정보 출력
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
       const resultsPath = path.join(process.cwd(), 'test-results', 'results.json');
       if (fs.existsSync(resultsPath)) {

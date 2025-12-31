@@ -26,7 +26,7 @@ export default defineConfig({
   // 테스트 옵션
   use: {
     // 기본 URL
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:3001',
     
     // 브라우저 설정
     trace: 'on-first-retry',
@@ -70,13 +70,13 @@ export default defineConfig({
     },
   ],
 
-  // 개발 서버 설정
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // 개발 서버 설정 (테스트 시에만 필요한 경우 활성화)
+  // webServer: {
+  //   command: 'npm run dev',
+  //   url: 'http://localhost:5173',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120000,
+  // },
   
   // 테스트 결과 디렉토리
   outputDir: 'test-results/',
