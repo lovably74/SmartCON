@@ -36,15 +36,18 @@ public class User extends BaseTenantEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 10)
+    @Builder.Default
     private Provider provider = Provider.LOCAL;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash; // 비밀번호 해시
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
     private Boolean isEmailVerified = false;
 
     @Column(name = "profile_image_url", length = 500)
@@ -56,7 +59,13 @@ public class User extends BaseTenantEntity {
     private String faceEmbedding;
 
     @Column(name = "login_failure_count")
+    @Builder.Default
     private Integer loginFailureCount = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    @Builder.Default
+    private Role role = Role.ROLE_WORKER;
 
     /**
      * 인증 제공자 열거형

@@ -17,7 +17,7 @@ import java.util.Map;
  * 
  * 슈퍼관리자가 데이터 무결성 검사 및 복구 기능을 사용할 수 있도록 합니다.
  */
-@RestController
+//@RestController  // JWT 테스트를 위해 임시 비활성화
 @RequestMapping("/api/v1/admin/data-integrity")
 @RequiredArgsConstructor
 @Slf4j

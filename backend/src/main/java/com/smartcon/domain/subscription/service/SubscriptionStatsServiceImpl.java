@@ -37,12 +37,19 @@ public class SubscriptionStatsServiceImpl implements SubscriptionStatsService {
         
         Object[] stats = subscriptionRepository.getSubscriptionStatsOptimized();
         
+        // H2 데이터베이스에서 반환되는 값들을 안전하게 변환
+        long pendingCount = stats[0] != null ? ((Number) stats[0]).longValue() : 0L;
+        long activeCount = stats[1] != null ? ((Number) stats[1]).longValue() : 0L;
+        long suspendedCount = stats[2] != null ? ((Number) stats[2]).longValue() : 0L;
+        long terminatedCount = stats[3] != null ? ((Number) stats[3]).longValue() : 0L;
+        long rejectedCount = stats[4] != null ? ((Number) stats[4]).longValue() : 0L;
+        
         return SubscriptionStatsDto.builder()
-                .pendingCount(((Number) stats[0]).longValue())
-                .activeCount(((Number) stats[1]).longValue())
-                .suspendedCount(((Number) stats[2]).longValue())
-                .terminatedCount(((Number) stats[3]).longValue())
-                .rejectedCount(((Number) stats[4]).longValue())
+                .pendingCount(pendingCount)
+                .activeCount(activeCount)
+                .suspendedCount(suspendedCount)
+                .terminatedCount(terminatedCount)
+                .rejectedCount(rejectedCount)
                 .build();
     }
     

@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -45,41 +47,41 @@ public class SecurityConfig {
             // 권한 설정 - 구독 승인 워크플로우 보안 강화
             .authorizeHttpRequests(auth -> auth
                 // H2 콘솔 접근 허용 (개발용)
-                .requestMatchers("/api/h2-console/**").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
                 
                 // Actuator 허용
-                .requestMatchers("/api/actuator/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 
                 // 인증 관련 경로 허용
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/v1/auth/**").permitAll()
                 
                 // 구독 신청 관련 경로 허용 (테넌트가 구독 신청할 수 있어야 함)
-                .requestMatchers("/api/v1/subscriptions/plans").permitAll()
-                .requestMatchers("/api/v1/subscriptions/create").permitAll()
-                .requestMatchers("/api/v1/subscriptions/current").permitAll()
+                .requestMatchers("/v1/subscriptions/plans").permitAll()
+                .requestMatchers("/v1/subscriptions/create").permitAll()
+                .requestMatchers("/v1/subscriptions/current").permitAll()
                 
                 // 슈퍼관리자 전용 API - 강화된 보안 (JWT 필터에서 처리)
-                .requestMatchers("/api/v1/admin/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/**").hasRole("SUPER")
                 
                 // 구독 승인 관련 API - 슈퍼관리자 전용
-                .requestMatchers("/api/v1/admin/subscriptions/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/subscriptions/**").hasRole("SUPER")
                 
                 // 자동 승인 규칙 관리 - 슈퍼관리자 전용
-                .requestMatchers("/api/v1/admin/auto-approval/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/auto-approval/**").hasRole("SUPER")
                 
                 // 알림 관리 - 슈퍼관리자 전용
-                .requestMatchers("/api/v1/admin/notifications/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/notifications/**").hasRole("SUPER")
                 
                 // 테넌트 관리 - 슈퍼관리자 전용
-                .requestMatchers("/api/v1/admin/tenants/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/tenants/**").hasRole("SUPER")
                 
                 // 시스템 모니터링 - 슈퍼관리자 전용
-                .requestMatchers("/api/v1/admin/system/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/api/v1/admin/dashboard/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/api/v1/admin/billing/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v1/admin/system/**").hasRole("SUPER")
+                .requestMatchers("/v1/admin/dashboard/**").hasRole("SUPER")
+                .requestMatchers("/v1/admin/billing/**").hasRole("SUPER")
                 
                 // 일반 API - 인증 필요 (개발 단계에서는 임시로 허용)
-                .requestMatchers("/api/v1/**").permitAll()
+                .requestMatchers("/v1/**").permitAll()
                 
                 // 기타 모든 요청 허용 (개발 단계)
                 .anyRequest().permitAll()
@@ -91,6 +93,11 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

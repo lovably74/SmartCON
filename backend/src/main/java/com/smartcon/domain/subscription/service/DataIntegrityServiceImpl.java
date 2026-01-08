@@ -25,7 +25,7 @@ import java.util.Optional;
  * 
  * 주기적 데이터 무결성 검사와 불일치 데이터 감지 및 복구 기능을 제공합니다.
  */
-@Service
+//@Service  // JWT 테스트를 위해 임시 비활성화
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)

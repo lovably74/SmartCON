@@ -1,5 +1,6 @@
 package com.smartcon.global.security;
 
+import com.smartcon.global.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,15 +16,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JWT 토큰 검증 필터
- * 개발 단계에서는 간단한 토큰 검증을 수행합니다.
+ * 실제 JWT 토큰 서비스를 사용한 토큰 검증 및 인증 처리
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    
+    private final JwtTokenService jwtTokenService;
     
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) 
@@ -41,58 +45,79 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         // Authorization 헤더가 없는 경우
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // 개발 단계에서는 슈퍼관리자 API가 아닌 경우 통과
+            // 슈퍼관리자 API가 아닌 경우 통과 (개발 단계)
             if (!requestURI.startsWith("/api/v1/admin/")) {
                 filterChain.doFilter(request, response);
                 return;
             }
             
             log.warn("슈퍼관리자 API 접근 시도 - 인증 토큰 없음: {}", requestURI);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"인증 토큰이 필요합니다.\"}");
+            sendUnauthorizedResponse(response, "인증 토큰이 필요합니다");
             return;
         }
         
         String token = authHeader.substring(7); // "Bearer " 제거
         
         try {
-            // 개발 단계에서는 간단한 토큰 검증
-            if (validateToken(token)) {
-                String role = extractRoleFromToken(token);
-                
-                // 슈퍼관리자 API 접근 시 권한 확인
-                if (requestURI.startsWith("/api/v1/admin/") && !"SUPER_ADMIN".equals(role)) {
-                    log.warn("슈퍼관리자 API 접근 거부 - 권한 부족: {} (역할: {})", requestURI, role);
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"error\":\"FORBIDDEN\",\"message\":\"슈퍼관리자 권한이 필요합니다.\"}");
-                    return;
-                }
-                
-                // 인증 정보 설정
-                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-                UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken("user", null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                
-                log.debug("JWT 토큰 검증 성공 - URI: {}, 역할: {}", requestURI, role);
-            } else {
+            // JWT 토큰 검증
+            if (!jwtTokenService.validateToken(token)) {
                 log.warn("JWT 토큰 검증 실패 - URI: {}", requestURI);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"유효하지 않은 토큰입니다.\"}");
+                sendUnauthorizedResponse(response, "유효하지 않은 토큰입니다");
                 return;
             }
+
+            // Access Token인지 확인
+            if (!jwtTokenService.isAccessToken(token)) {
+                log.warn("Access Token이 아닌 토큰으로 API 접근 시도 - URI: {}", requestURI);
+                sendUnauthorizedResponse(response, "Access Token이 필요합니다");
+                return;
+            }
+
+            // 토큰에서 사용자 정보 추출
+            String userId = jwtTokenService.extractUserId(token);
+            String tenantId = jwtTokenService.extractTenantId(token);
+            String role = jwtTokenService.extractRole(token);
+            Map<String, Object> permissions = jwtTokenService.extractPermissions(token);
+
+            // 테넌트 컨텍스트 설정
+            if (tenantId != null) {
+                TenantContext.setCurrentTenant(tenantId);
+            }
+
+            // 슈퍼관리자 API 접근 시 권한 확인
+            if (requestURI.startsWith("/v1/admin/") && !"ROLE_SUPER".equals(role)) {
+                log.warn("슈퍼관리자 API 접근 거부 - 권한 부족: {} (역할: {})", requestURI, role);
+                sendForbiddenResponse(response, "슈퍼관리자 권한이 필요합니다");
+                return;
+            }
+            
+            // 인증 정보 설정
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+            UsernamePasswordAuthenticationToken authentication = 
+                new UsernamePasswordAuthenticationToken(userId, null, authorities);
+            
+            // 추가 정보 설정
+            authentication.setDetails(Map.of(
+                "tenantId", tenantId,
+                "permissions", permissions
+            ));
+            
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            log.debug("JWT 토큰 검증 성공 - URI: {}, 사용자: {}, 역할: {}", requestURI, userId, role);
+            
         } catch (Exception e) {
             log.error("JWT 토큰 처리 중 오류 발생 - URI: {}, 오류: {}", requestURI, e.getMessage());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"토큰 처리 중 오류가 발생했습니다.\"}");
+            sendUnauthorizedResponse(response, "토큰 처리 중 오류가 발생했습니다");
             return;
         }
         
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            // 테넌트 컨텍스트 정리
+            TenantContext.clear();
+        }
     }
     
     /**
@@ -113,50 +138,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     
     /**
-     * 토큰 유효성 검증 (개발용 간단한 구현)
+     * 401 Unauthorized 응답 전송
      */
-    private boolean validateToken(String token) {
-        // 개발 단계에서는 간단한 토큰 검증
-        // 실제 운영에서는 JWT 라이브러리를 사용하여 서명 검증 등을 수행해야 함
-        
-        if (token == null || token.trim().isEmpty()) {
-            return false;
-        }
-        
-        // 개발용 토큰 패턴 검증
-        if (token.startsWith("dev-super-admin-")) {
-            return true;
-        }
-        
-        if (token.startsWith("dev-admin-")) {
-            return true;
-        }
-        
-        if (token.startsWith("dev-user-")) {
-            return true;
-        }
-        
-        // 기본적으로 유효하지 않은 토큰으로 처리
-        return false;
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(String.format(
+            "{\"error\":\"UNAUTHORIZED\",\"message\":\"%s\"}", message));
     }
     
     /**
-     * 토큰에서 역할 추출 (개발용 간단한 구현)
+     * 403 Forbidden 응답 전송
      */
-    private String extractRoleFromToken(String token) {
-        // 개발 단계에서는 토큰 패턴으로 역할 결정
-        if (token.startsWith("dev-super-admin-")) {
-            return "SUPER_ADMIN";
-        }
-        
-        if (token.startsWith("dev-admin-")) {
-            return "ADMIN";
-        }
-        
-        if (token.startsWith("dev-user-")) {
-            return "USER";
-        }
-        
-        return "USER"; // 기본 역할
+    private void sendForbiddenResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(String.format(
+            "{\"error\":\"FORBIDDEN\",\"message\":\"%s\"}", message));
     }
 }

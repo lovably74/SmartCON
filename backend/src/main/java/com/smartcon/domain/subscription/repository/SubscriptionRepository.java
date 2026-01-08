@@ -113,15 +113,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     
     /**
      * 승인 대기 목록 조회 (성능 최적화된 쿼리)
-     * 인덱스 활용: idx_subscriptions_status_requested_at
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT s.id, s.tenant_id, s.plan_id, s.status, s.approval_requested_at, " +
                    "t.company_name, t.ceo_name, t.contact_email, " +
-                   "sp.plan_name, sp.monthly_price " +
+                   "sp.name, sp.monthly_price " +
                    "FROM subscriptions s " +
-                   "FORCE INDEX (idx_subscriptions_status_requested_at) " +
                    "JOIN tenants t ON s.tenant_id = t.id " +
-                   "JOIN subscription_plans sp ON s.plan_id = sp.id " +
+                   "JOIN subscription_plans sp ON s.plan_id = sp.plan_id " +
                    "WHERE s.status = 'PENDING_APPROVAL' " +
                    "ORDER BY s.approval_requested_at DESC " +
                    "LIMIT :limit OFFSET :offset", 
@@ -130,17 +129,16 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     
     /**
      * 승인 대기 목록 총 개수 조회 (성능 최적화)
-     * 인덱스 활용: idx_subscriptions_status_requested_at
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT COUNT(*) FROM subscriptions " +
-                   "FORCE INDEX (idx_subscriptions_status_requested_at) " +
                    "WHERE status = 'PENDING_APPROVAL'", 
            nativeQuery = true)
     long countPendingApprovalsOptimized();
     
     /**
      * 대시보드 통계 조회 (성능 최적화)
-     * 인덱스 활용: idx_subscriptions_stats_status_date
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT " +
                    "COUNT(CASE WHEN status = 'PENDING_APPROVAL' THEN 1 END) as pending_count, " +
@@ -148,27 +146,25 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
                    "COUNT(CASE WHEN status = 'SUSPENDED' THEN 1 END) as suspended_count, " +
                    "COUNT(CASE WHEN status = 'TERMINATED' THEN 1 END) as terminated_count, " +
                    "COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_count " +
-                   "FROM subscriptions " +
-                   "FORCE INDEX (idx_subscriptions_stats_status_date)", 
+                   "FROM subscriptions", 
            nativeQuery = true)
     Object[] getSubscriptionStatsOptimized();
     
     /**
      * 24시간 이상 대기 중인 승인 건수 조회 (성능 최적화)
+     * H2 호환성을 위해 FORCE INDEX 및 MySQL 함수 제거
      */
     @Query(value = "SELECT COUNT(*) FROM subscriptions " +
-                   "FORCE INDEX (idx_subscriptions_status_requested_at) " +
                    "WHERE status = 'PENDING_APPROVAL' " +
-                   "AND approval_requested_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)", 
+                   "AND approval_requested_at < DATEADD('HOUR', -24, CURRENT_TIMESTAMP)", 
            nativeQuery = true)
     long countOverduePendingApprovals();
     
     /**
      * 테넌트별 구독 필터링 (성능 최적화)
-     * 인덱스 활용: idx_subscriptions_tenant_status
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT s.* FROM subscriptions s " +
-                   "FORCE INDEX (idx_subscriptions_tenant_status) " +
                    "JOIN tenants t ON s.tenant_id = t.id " +
                    "WHERE (:status IS NULL OR s.status = :status) " +
                    "AND (:tenantName IS NULL OR t.company_name LIKE CONCAT('%', :tenantName, '%')) " +
@@ -183,9 +179,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     
     /**
      * 필터링된 구독 총 개수 조회
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT COUNT(*) FROM subscriptions s " +
-                   "FORCE INDEX (idx_subscriptions_tenant_status) " +
                    "JOIN tenants t ON s.tenant_id = t.id " +
                    "WHERE (:status IS NULL OR s.status = :status) " +
                    "AND (:tenantName IS NULL OR t.company_name LIKE CONCAT('%', :tenantName, '%'))", 
@@ -196,10 +192,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     
     /**
      * 커서 기반 페이지네이션을 위한 승인 대기 목록 조회
-     * 인덱스 활용: idx_subscriptions_cursor_pagination
+     * H2 호환성을 위해 FORCE INDEX 제거
      */
     @Query(value = "SELECT s.* FROM subscriptions s " +
-                   "FORCE INDEX (idx_subscriptions_cursor_pagination) " +
                    "WHERE s.status = 'PENDING_APPROVAL' " +
                    "AND (:cursorId IS NULL OR s.id > :cursorId) " +
                    "ORDER BY s.id ASC " +
@@ -211,6 +206,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     
     /**
      * 월별 승인 통계 조회 (성능 최적화)
+     * H2 호환성을 위해 MySQL 함수를 H2 함수로 변경
      */
     @Query(value = "SELECT " +
                    "YEAR(s.created_at) as year, " +
@@ -219,9 +215,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
                    "COUNT(CASE WHEN s.status = 'ACTIVE' THEN 1 END) as approved_count, " +
                    "COUNT(CASE WHEN s.status = 'REJECTED' THEN 1 END) as rejected_count " +
                    "FROM subscriptions s " +
-                   "WHERE s.created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) " +
+                   "WHERE s.created_at >= DATEADD('MONTH', -12, CURRENT_TIMESTAMP) " +
                    "GROUP BY YEAR(s.created_at), MONTH(s.created_at) " +
                    "ORDER BY year DESC, month DESC", 
            nativeQuery = true)
     List<Object[]> getMonthlyApprovalStats();
+
+    /**
+     * 승인 대기 중인 구독 목록 조회 (알림용)
+     */
+    @Query("SELECT s FROM Subscription s WHERE s.status = 'PENDING_APPROVAL'")
+    List<Subscription> findPendingApprovalSubscriptions();
 }

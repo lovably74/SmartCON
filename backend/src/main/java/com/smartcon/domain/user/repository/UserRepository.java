@@ -41,4 +41,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.isActive = true")
     List<User> findSuperAdmins();
+
+    /**
+     * 이메일로 사용자 조회
+     */
+    java.util.Optional<User> findByEmail(String email);
+
+    /**
+     * 이메일과 테넌트 ID로 사용자 조회
+     */
+    java.util.Optional<User> findByEmailAndTenantId(String email, Long tenantId);
+
+    /**
+     * 역할별 사용자 조회
+     */
+    List<User> findByRole(User.Role role);
+
+    /**
+     * 테넌트 ID와 역할로 사용자 조회
+     */
+    List<User> findByTenantIdAndRole(Long tenantId, User.Role role);
 }

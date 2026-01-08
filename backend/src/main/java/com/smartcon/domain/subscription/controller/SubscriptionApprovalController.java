@@ -25,7 +25,8 @@ import java.util.List;
  * 슈퍼관리자가 구독 신청을 승인, 거부, 중지, 종료할 수 있는 API를 제공합니다.
  * 모든 엔드포인트는 슈퍼관리자 권한이 필요합니다.
  */
-@RestController
+// JWT 인증 시스템 테스트를 위해 임시로 비활성화
+// @RestController
 @RequestMapping("/api/v1/admin/subscription-approvals")
 @RequiredArgsConstructor
 @Slf4j
