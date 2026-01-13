@@ -28,6 +28,7 @@ import java.util.Map;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenService jwtTokenService;
+    private final JwtTokenBlacklistService blacklistService;
     
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) 
@@ -66,6 +67,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            // 블랙리스트 확인
+            if (blacklistService.isTokenBlacklisted(token)) {
+                log.warn("블랙리스트된 토큰으로 접근 시도 - URI: {}", requestURI);
+                sendUnauthorizedResponse(response, "로그아웃된 토큰입니다");
+                return;
+            }
+
             // Access Token인지 확인
             if (!jwtTokenService.isAccessToken(token)) {
                 log.warn("Access Token이 아닌 토큰으로 API 접근 시도 - URI: {}", requestURI);
@@ -81,7 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 테넌트 컨텍스트 설정
             if (tenantId != null) {
-                TenantContext.setCurrentTenant(tenantId);
+                TenantContext.setCurrentTenantId(Long.parseLong(tenantId));
             }
 
             // 슈퍼관리자 API 접근 시 권한 확인

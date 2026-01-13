@@ -9,10 +9,9 @@
       "DOM.Iterable"
     ],
     "module": "ESNext",
-    "types": [
-      "vite/client"
-    ],
+    "types": [],
     "skipLibCheck": true,
+    
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -20,6 +19,14 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    
+    /* 프로덕션 최적화 */
+    "removeComments": true,
+    "importsNotUsedAsValues": "remove",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
@@ -27,6 +34,15 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    
+    /* 성능 최적화 */
+    "incremental": true,
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    
     /* Paths */
     "baseUrl": ".",
     "paths": {
@@ -36,6 +52,15 @@
     }
   },
   "include": [
-    "src"
+    "src",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

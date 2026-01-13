@@ -27,7 +27,7 @@ CREATE TABLE plan_features (
 -- 구독 테이블
 CREATE TABLE subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tenant_id VARCHAR(50) NOT NULL,
+    tenant_id BIGINT NOT NULL,
     plan_id VARCHAR(50) NOT NULL,
     status ENUM('ACTIVE', 'SUSPENDED', 'CANCELLED', 'EXPIRED') DEFAULT 'ACTIVE',
     start_date DATE NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE subscriptions (
 -- 결제 수단 테이블
 CREATE TABLE payment_methods (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tenant_id VARCHAR(50) NOT NULL,
+    tenant_id BIGINT NOT NULL,
     type ENUM('CARD', 'BANK_TRANSFER') NOT NULL,
     card_number_masked VARCHAR(20),
     card_holder_name VARCHAR(100),
@@ -74,7 +74,7 @@ CREATE TABLE payment_methods (
 -- 결제 내역 테이블
 CREATE TABLE payments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tenant_id VARCHAR(50) NOT NULL,
+    tenant_id BIGINT NOT NULL,
     subscription_id BIGINT NOT NULL,
     payment_method_id BIGINT,
     payment_key VARCHAR(200),

@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * JWT 토큰 생성 및 검증 서비스
@@ -53,6 +54,7 @@ public class JwtTokenService {
         claims.put("token_type", "access");
 
         return Jwts.builder()
+                .setId(UUID.randomUUID().toString()) // JTI 클레임 추가로 토큰 고유성 보장
                 .setSubject(userId)
                 .addClaims(claims)
                 .setIssuedAt(Date.from(now))
@@ -73,6 +75,7 @@ public class JwtTokenService {
         claims.put("token_type", "refresh");
 
         return Jwts.builder()
+                .setId(UUID.randomUUID().toString()) // JTI 클레임 추가로 토큰 고유성 보장
                 .setSubject(userId)
                 .addClaims(claims)
                 .setIssuedAt(Date.from(now))

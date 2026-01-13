@@ -23,11 +23,12 @@
   - MariaDB 서비스 시작 및 연결 확인
   - _Requirements: 3.1, 3.2, 3.5_
 
-- [ ]* 1.1 로컬 MariaDB 연결 검증 테스트
+- [x] 1.1 로컬 MariaDB 연결 검증 테스트
+
   - **Property 12: Local Database Setup Verification**
   - **Validates: Requirements 3.2**
 
-- [ ] 2. 백엔드 MariaDB 설정 및 의존성 업데이트
+- [x] 2. 백엔드 MariaDB 설정 및 의존성 업데이트
   - [x] 2.1 Maven 의존성 업데이트 및 MariaDB 드라이버 추가
     - pom.xml에 MariaDB 의존성 추가
     - Testcontainers MariaDB 의존성 추가
@@ -43,7 +44,7 @@
     - **Property 6: Backend MariaDB Configuration**
     - **Validates: Requirements 2.1**
 
-- [ ] 3. Flyway 마이그레이션 스크립트 작성
+- [x] 3. Flyway 마이그레이션 스크립트 작성
   - [x] 3.1 기존 H2 스키마 분석 및 MariaDB 호환 스키마 생성
     - V1__Create_initial_schema.sql 작성
     - 테넌트, 사용자, 역할 테이블 생성
@@ -115,36 +116,37 @@
     - **Property 24: Test Suite Preservation**
     - **Validates: Requirements 7.3**
 
-- [ ] 7. 체크포인트 - 백엔드 MariaDB 전환 완료 검증
+- [x] 7. 체크포인트 - 백엔드 MariaDB 전환 완료 검증
   - 모든 백엔드 테스트 통과 확인
   - MariaDB 연결 및 데이터 작업 정상 동작 확인
   - 사용자에게 질문이 있으면 문의
 
-- [ ] 8. 슈퍼관리자용 프론트엔드 디렉토리 구조 생성
-  - [ ] 8.1 frontend 디렉토리 생성 및 기본 구조 설정
+- [x] 8. 슈퍼관리자용 프론트엔드 디렉토리 구조 생성
+  - [x] 8.1 frontend 디렉토리 생성 및 기본 구조 설정
     - 프로덕션용 frontend/ 디렉토리 생성
     - 기본 디렉토리 구조 (src/, public/, tests/) 생성
     - _Requirements: 1.1, 4.2_
 
-  - [ ] 8.2 프로토타입에서 슈퍼관리자 소스 코드 복사 및 정리
+  - [x] 8.2 프로토타입에서 슈퍼관리자 소스 코드 복사 및 정리
     - prototype/src/pages/super 내용을 frontend/src/pages/super로 복사
     - 슈퍼관리자 관련 컴포넌트 및 훅 복사
     - 불필요한 파일 제거 및 정리
     - _Requirements: 1.1, 4.1_
 
-- [ ] 9. 슈퍼관리자용 프론트엔드 의존성 및 설정 구성
-  - [ ] 9.1 package.json 및 기본 설정 파일 생성
+- [-] 9. 슈퍼관리자용 프론트엔드 의존성 및 설정 구성
+  - [x] 9.1 package.json 및 기본 설정 파일 생성
     - React 18, TypeScript, Vite 설정
     - Zustand, TanStack Query 의존성 추가
     - 슈퍼관리자 페이지에 필요한 의존성만 포함
     - _Requirements: 1.2, 1.5_
 
-  - [ ] 9.2 Vite 빌드 설정 프로덕션 최적화
+  - [x] 9.2 Vite 빌드 설정 프로덕션 최적화
     - vite.config.ts 프로덕션 최적화 설정
     - 번들 크기 최적화 및 코드 스플리팅
     - _Requirements: 1.6_
 
-  - [ ]* 9.3 프론트엔드 기술 스택 일관성 검증 테스트
+  - [x] 9.3 프론트엔드 기술 스택 일관성 검증 테스트
+
     - **Property 1: Frontend Technology Stack Consistency**
     - **Validates: Requirements 1.2**
 

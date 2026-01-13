@@ -115,13 +115,9 @@ ADD INDEX idx_billing_partition_helper (billing_date, tenant_id);
 ALTER TABLE tenants
 ADD INDEX idx_tenants_stats (status, created_at, subscription_plan);
 
--- 월별 결제 통계용 인덱스
+-- 월별 결제 통계용 인덱스 (함수 기반 인덱스 대신 일반 인덱스 사용)
 ALTER TABLE subscription_billing
-ADD INDEX idx_billing_monthly_stats (
-    YEAR(billing_date), 
-    MONTH(billing_date), 
-    payment_status
-);
+ADD INDEX idx_billing_monthly_stats (billing_date, payment_status);
 
 -- 일별 출근 통계용 인덱스
 ALTER TABLE attendance_logs

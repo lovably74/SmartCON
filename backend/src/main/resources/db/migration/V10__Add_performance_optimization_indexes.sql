@@ -34,10 +34,9 @@ ALTER TABLE subscriptions
 ADD INDEX idx_subscriptions_stats_status_date (status, created_at, tenant_id),
 ADD INDEX idx_subscriptions_plan_status_stats (plan_id, status, created_at);
 
--- 승인 처리 통계 최적화
+-- 승인 처리 통계 최적화 (함수 기반 인덱스 대신 일반 인덱스 사용)
 ALTER TABLE subscription_approvals
-ADD INDEX idx_approvals_stats_date_action (processed_at, action),
-ADD INDEX idx_approvals_monthly_stats (YEAR(processed_at), MONTH(processed_at), action);
+ADD INDEX idx_approvals_stats_date_action (processed_at, action);
 
 -- =============================================================================
 -- 자동 승인 규칙 성능 최적화
@@ -70,7 +69,7 @@ ADD INDEX idx_notifications_cursor_pagination (recipient_id, id, created_at);
 -- 테넌트 정보 검색 최적화 (구독 승인 시 테넌트 정보 조회)
 ALTER TABLE tenants
 ADD INDEX idx_tenants_search_optimization (company_name, ceo_name, business_number),
-ADD INDEX idx_tenants_contact_search (contact_email, contact_phone);
+ADD INDEX idx_tenants_contact_search (email, phone_number);
 
 -- 사용자 검색 최적화 (승인 담당자 검색)
 ALTER TABLE users

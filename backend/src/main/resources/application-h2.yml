@@ -1,0 +1,57 @@
+# H2 개발 환경 설정 (E2E Testing 및 빠른 개발용)
+spring:
+  datasource:
+    url: jdbc:h2:mem:smartcon_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: SmartCON-H2-Pool
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        '[format_sql]': true
+        '[use_sql_comments]': true
+  
+  flyway:
+    enabled: false
+
+# 로컬 개발용 로깅 설정
+logging:
+  level:
+    '[com.smartcon]': DEBUG
+    '[org.springframework.security]': DEBUG
+    '[org.hibernate.SQL]': DEBUG
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+    '[org.flywaydb]': DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT 설정 (개발용)
+jwt:
+  secret: smartcon-h2-jwt-secret-key-for-development-only
+  access-token-expiration: 3600000    # 1시간 (개발 편의성)
+  refresh-token-expiration: 604800000 # 7일
+
+# CORS 설정 (로컬 개발)
+cors:
+  allowed-origins: 
+    - http://localhost:5173  # 새로운 프론트엔드
+    - http://localhost:3000  # 프로토타입
+    - http://127.0.0.1:5173
+    - http://127.0.0.1:3000

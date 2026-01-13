@@ -89,16 +89,36 @@ public class AuthController {
      * 토큰 검증
      */
     @PostMapping("/validate")
-    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         log.debug("토큰 검증 API 호출");
 
         try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // Authorization 헤더가 없는 경우
+            if (authHeader == null) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("INVALID_TOKEN", "유효하지 않은 토큰 형식입니다"));
+                        .body(ApiResponse.error("MISSING_TOKEN", "Authorization 헤더가 누락되었습니다"));
             }
 
-            String token = authHeader.substring(7);
+            // Authorization 헤더가 빈 문자열인 경우
+            if (authHeader.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("MISSING_TOKEN", "Authorization 헤더가 비어있습니다"));
+            }
+
+            // Bearer 접두사가 없는 경우
+            if (!authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("INVALID_TOKEN_FORMAT", "Bearer 토큰 형식이 아닙니다"));
+            }
+
+            String token = authHeader.substring(7).trim();
+            
+            // 토큰이 빈 문자열이거나 공백만 있는 경우
+            if (token.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("EMPTY_TOKEN", "토큰이 비어있습니다"));
+            }
+
             boolean isValid = authService.validateToken(token);
             
             if (isValid) {

@@ -1,0 +1,185 @@
+# 로컬 MariaDB 설치 및 설정 가이드
+
+## 개요
+
+SmartCON Lite 프로젝트의 로컬 개발 환경을 위한 MariaDB 10.11 설치 및 설정 가이드입니다.
+
+## 1. MariaDB 10.11 설치
+
+### Windows 환경
+
+1. **MariaDB 다운로드**
+   - [MariaDB 공식 사이트](https://mariadb.org/download/)에서 MariaDB 10.11 다운로드
+   - Windows x64용 MSI 설치 파일 선택
+
+2. **설치 실행**
+   ```cmd
+   # 다운로드한 MSI 파일 실행
+   mariadb-10.11.x-winx64.msi
+   ```
+
+3. **설치 옵션 설정**
+   - Root 비밀번호: `fhdlxpzm1*` (개발용)
+   - 포트: `3306` (기본값)
+   - 문자셋: `UTF8MB4`
+   - 서비스로 설치: 체크
+
+## 2. MariaDB 서비스 시작
+
+```cmd
+# 서비스 시작
+net start MariaDB
+
+# 서비스 상태 확인
+sc query MariaDB
+```
+
+## 3. 데이터베이스 및 사용자 생성
+
+### 3.1 MariaDB 접속
+
+```cmd
+# MariaDB 클라이언트로 접속
+mysql -u root -p
+# 비밀번호: fhdlxpzm1*
+```
+
+### 3.2 데이터베이스 생성
+
+```sql
+-- smartcon_local 데이터베이스 생성
+CREATE DATABASE smartcon_local 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
+
+-- 데이터베이스 확인
+SHOW DATABASES;
+```
+
+### 3.3 사용자 생성 및 권한 부여
+
+```sql
+-- smartcon_user 사용자 생성
+CREATE USER 'smartcon_user'@'localhost' IDENTIFIED BY 'smartcon_pass';
+
+-- smartcon_local 데이터베이스에 대한 모든 권한 부여
+GRANT ALL PRIVILEGES ON smartcon_local.* TO 'smartcon_user'@'localhost';
+
+-- 권한 새로고침
+FLUSH PRIVILEGES;
+
+-- 사용자 확인
+SELECT User, Host FROM mysql.user WHERE User = 'smartcon_user';
+```
+
+### 3.4 연결 테스트
+
+```sql
+-- 새 터미널에서 smartcon_user로 접속 테스트
+mysql -u smartcon_user -p smartcon_local
+# 비밀번호: smartcon_pass
+
+-- 연결 성공 시 데이터베이스 확인
+SELECT DATABASE();
+SELECT USER();
+```
+
+## 4. 설정 확인
+
+### 4.1 문자셋 확인
+
+```sql
+-- 데이터베이스 문자셋 확인
+SELECT @@character_set_database, @@collation_database;
+
+-- 서버 문자셋 확인
+SHOW VARIABLES LIKE 'character_set%';
+SHOW VARIABLES LIKE 'collation%';
+```
+
+### 4.2 연결 설정 확인
+
+```sql
+-- 최대 연결 수 확인
+SHOW VARIABLES LIKE 'max_connections';
+
+-- 현재 연결 수 확인
+SHOW STATUS LIKE 'Threads_connected';
+```
+
+## 5. Spring Boot 애플리케이션 연결 테스트
+
+### 5.1 테스트 실행
+
+```cmd
+# 백엔드 디렉토리로 이동
+cd backend
+
+# 로컬 MariaDB 연결 테스트 실행
+mvn test -Dtest=LocalMariaDBConnectionTest
+```
+
+### 5.2 예상 결과
+
+테스트가 성공하면 다음과 같은 로그가 출력됩니다:
+
+```
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+```
+
+## 6. 문제 해결
+
+### 6.1 연결 실패 시
+
+```sql
+-- 사용자 권한 재확인
+SHOW GRANTS FOR 'smartcon_user'@'localhost';
+
+-- 사용자 비밀번호 재설정
+ALTER USER 'smartcon_user'@'localhost' IDENTIFIED BY 'smartcon_pass';
+FLUSH PRIVILEGES;
+```
+
+### 6.2 포트 충돌 시
+
+```cmd
+# 포트 사용 확인
+netstat -an | findstr :3306
+
+# MariaDB 포트 변경 (my.ini 파일 수정)
+# [mysqld]
+# port = 3307
+```
+
+### 6.3 서비스 재시작
+
+```cmd
+# MariaDB 서비스 재시작
+net stop MariaDB
+net start MariaDB
+```
+
+## 7. 보안 고려사항
+
+### 개발 환경용 설정
+- Root 비밀번호: `fhdlxpzm1*` (개발용)
+- 사용자 비밀번호: `smartcon_pass` (개발용)
+- **프로덕션 환경에서는 반드시 강력한 비밀번호 사용**
+
+### 방화벽 설정
+- 로컬 개발용이므로 외부 접근 차단
+- 필요시 Windows 방화벽에서 3306 포트 규칙 설정
+
+## 8. 다음 단계
+
+MariaDB 설치 및 설정 완료 후:
+
+1. **Flyway 마이그레이션 실행**: 데이터베이스 스키마 생성
+2. **초기 데이터 시딩**: 개발용 테스트 데이터 삽입
+3. **백엔드 애플리케이션 실행**: Spring Boot 애플리케이션 시작
+
+## 참고 자료
+
+- [MariaDB 공식 문서](https://mariadb.com/kb/en/documentation/)
+- [MariaDB Windows 설치 가이드](https://mariadb.com/kb/en/installing-mariadb-msi-packages-on-windows/)
+- [Spring Boot MariaDB 연동](https://spring.io/guides/gs/accessing-data-mysql/)

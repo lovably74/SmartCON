@@ -80,7 +80,6 @@ CREATE TABLE users (
     
     -- 외래키 및 제약조건
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_email_per_tenant (IFNULL(tenant_id, 0), email),
     
     -- 인덱스
     INDEX idx_users_tenant_id (tenant_id),

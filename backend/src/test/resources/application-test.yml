@@ -1,0 +1,40 @@
+# 테스트 환경 설정 - Testcontainers MariaDB 사용
+spring:
+  datasource:
+    # Testcontainers가 동적으로 설정하므로 기본값만 설정
+    driver-class-name: org.mariadb.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Flyway 사용으로 변경
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        '[format_sql]': false
+        '[use_sql_comments]': false
+  
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+
+# JWT 설정 (테스트용)
+jwt:
+  secret: test-secret-key-for-jwt-token-service-testing-purposes-only-minimum-32-chars
+  access-token-expiration-minutes: 60
+  refresh-token-expiration-days: 7
+  use-rsa: false
+  issuer: smartcon-lite
+  audience: smartcon-api
+
+# 로깅 설정 (테스트용)
+logging:
+  level:
+    com.smartcon: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
