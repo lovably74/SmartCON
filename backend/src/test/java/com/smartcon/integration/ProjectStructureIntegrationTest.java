@@ -4,6 +4,7 @@ import com.smartcon.SmartconApplication;
 import com.smartcon.domain.attendance.repository.AttendanceRecordRepository;
 import com.smartcon.domain.project.repository.ProjectRepository;
 import com.smartcon.domain.subscription.repository.SubscriptionRepository;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.repository.UserRepository;
 import com.smartcon.global.security.JwtTokenService;
 import com.smartcon.global.tenant.TenantContext;
@@ -171,19 +172,19 @@ class ProjectStructureIntegrationTest {
         // Given & When: 역할 시스템 enum 검증
         
         // Then: 5단계 역할이 모두 정의되어 있는지 검증
-        com.smartcon.domain.user.entity.User.Role[] roles = {
-            com.smartcon.domain.user.entity.User.Role.ROLE_SUPER, 
-            com.smartcon.domain.user.entity.User.Role.ROLE_HQ, 
-            com.smartcon.domain.user.entity.User.Role.ROLE_SITE, 
-            com.smartcon.domain.user.entity.User.Role.ROLE_TEAM, 
-            com.smartcon.domain.user.entity.User.Role.ROLE_WORKER
+        Role[] roles = {
+            Role.ROLE_SUPER, 
+            Role.ROLE_HQ, 
+            Role.ROLE_SITE, 
+            Role.ROLE_TEAM, 
+            Role.ROLE_WORKER
         };
         assertThat(roles).hasSize(5);
-        assertThat(com.smartcon.domain.user.entity.User.Role.ROLE_SUPER.getDisplayName()).isEqualTo("슈퍼관리자");
-        assertThat(com.smartcon.domain.user.entity.User.Role.ROLE_HQ.getDisplayName()).isEqualTo("본사관리자");
-        assertThat(com.smartcon.domain.user.entity.User.Role.ROLE_SITE.getDisplayName()).isEqualTo("현장관리자");
-        assertThat(com.smartcon.domain.user.entity.User.Role.ROLE_TEAM.getDisplayName()).isEqualTo("노무팀장");
-        assertThat(com.smartcon.domain.user.entity.User.Role.ROLE_WORKER.getDisplayName()).isEqualTo("일반노무자");
+        assertThat(Role.ROLE_SUPER.getDisplayName()).isEqualTo("슈퍼관리자");
+        assertThat(Role.ROLE_HQ.getDisplayName()).isEqualTo("본사관리자");
+        assertThat(Role.ROLE_SITE.getDisplayName()).isEqualTo("현장관리자");
+        assertThat(Role.ROLE_TEAM.getDisplayName()).isEqualTo("노무팀장");
+        assertThat(Role.ROLE_WORKER.getDisplayName()).isEqualTo("일반노무자");
         
         // 로그인 타입 enum 검증
         assertThat(com.smartcon.domain.user.entity.LoginType.values()).hasSize(2);
