@@ -1,8 +1,14 @@
 # SmartCON Lite 클래스 다이어그램
 
+**문서 버전:** 5.0  
+**작성일:** 2026년 1월 13일  
+**최종 수정일:** 2026년 1월 13일  
+**작성자:** Kiro AI Assistant  
+**변경 사항:** 5단계 역할 기반 시스템 및 통합 로그인 시스템 반영
+
 ## 문서 개요
 이 문서는 SmartCON Lite 시스템의 전체 클래스 구조와 컴포넌트 간의 관계를 시각적으로 표현한 클래스 다이어그램입니다.
-각 도메인별로 세분화하여 시스템의 복잡성을 관리 가능한 단위로 분해하여 설명합니다.
+새로운 5단계 역할 기반 시스템(슈퍼관리자, 본사관리자, 현장관리자, 노무팀장, 일반노무자)과 통합 로그인 시스템(개인사용자 소셜로그인 vs 관리자 사업자번호+비밀번호)을 반영하여 각 도메인별로 세분화하여 시스템의 복잡성을 관리 가능한 단위로 분해하여 설명합니다.
 
 ## 전체 시스템 아키텍처
 
@@ -288,17 +294,21 @@ Redis 기반 분산 캐시와 비동기 작업 처리를 지원합니다.
 
 ```mermaid
 classDiagram
-    %% 사용자 엔티티 - 시스템의 핵심 사용자 정보
+    %% 사용자 엔티티 - 시스템의 핵심 사용자 정보 (통합 로그인 시스템)
     class User {
         -String name "사용자 실명 (필수, 최대 50자)"
-        -String email "이메일 주소 (로그인 ID, 유니크 제약)"
-        -String phoneNumber "휴대폰 번호 (국제 형식, 선택사항)"
+        -String email "이메일 주소 (로그인 ID, 테넌트 내 유니크)"
+        -String phoneNumber "휴대폰 번호 (국제 형식, CI값 검증용)"
+        -String ciValue "CI값 (연계정보, 휴대폰 인증 시 생성, 개인 식별용)"
         -String socialId "소셜 로그인 고유 ID (카카오/네이버 연동 시)"
         -Provider provider "로그인 제공자 (LOCAL/KAKAO/NAVER)"
         -String passwordHash "BCrypt 암호화된 비밀번호 (소셜 로그인 시 null)"
+        -String businessNumber "사업자등록번호 (관리자 로그인용, 10자리)"
         -Role role "사용자 역할 (SUPER/HQ/SITE/TEAM/WORKER)"
+        -LoginType loginType "로그인 유형 (BUSINESS/SOCIAL)"
         -Boolean isActive "계정 활성화 상태 (기본값: true)"
         -Boolean isEmailVerified "이메일 인증 완료 여부 (기본값: false)"
+        -Boolean isPhoneVerified "휴대폰 인증 완료 여부 (기본값: false)"
         -String profileImageUrl "프로필 이미지 URL (S3 저장소 경로)"
         -String faceEmbedding "FaceNet 얼굴 임베딩 벡터 (Base64 인코딩)"
         -Integer loginFailureCount "연속 로그인 실패 횟수 (기본값: 0)"
@@ -306,6 +316,7 @@ classDiagram
         -LocalDateTime passwordChangedAt "비밀번호 변경 시간"
         +isActive() boolean "계정 활성화 상태 확인"
         +isEmailVerified() boolean "이메일 인증 상태 확인"
+        +isPhoneVerified() boolean "휴대폰 인증 상태 확인"
         +incrementLoginFailureCount() "로그인 실패 횟수 증가 (최대 10회)"
         +resetLoginFailureCount() "로그인 실패 횟수 초기화 (성공 로그인 시)"
         +isLocked() boolean "계정 잠금 상태 확인 (5회 실패 시 30분 잠금)"
@@ -314,33 +325,53 @@ classDiagram
         +updateFaceEmbedding(String embedding) "얼굴 임베딩 벡터 업데이트"
         +hasRole(Role requiredRole) boolean "특정 역할 권한 확인"
         +canAccessTenant(Long tenantId) boolean "테넌트 접근 권한 확인"
+        +requiresBusinessLogin() boolean "사업자번호 로그인 필요 여부"
+        +canUseSocialLogin() boolean "소셜 로그인 사용 가능 여부"
+        +updateCiValue(String ciValue) "CI값 업데이트 (휴대폰 인증 시)"
+        +validateBusinessAccess(String businessNumber) boolean "사업자번호 접근 권한 검증"
     }
     
-    %% 로그인 제공자 열거형 - 다양한 인증 방식 지원
+    %% 로그인 제공자 열거형 - 통합 로그인 시스템 지원
     class Provider {
         <<enumeration>>
-        LOCAL "일반 회원가입 (이메일 + 비밀번호)"
-        KAKAO "카카오 소셜 로그인 (OAuth 2.0)"
-        NAVER "네이버 소셜 로그인 (OAuth 2.0)"
+        LOCAL "일반 회원가입 (이메일 + 비밀번호, 사업자번호 + 비밀번호)"
+        KAKAO "카카오 소셜 로그인 (OAuth 2.0, 개인사용자용)"
+        NAVER "네이버 소셜 로그인 (OAuth 2.0, 개인사용자용)"
         GOOGLE "구글 소셜 로그인 (OAuth 2.0, 향후 지원)"
         +getDisplayName() String "화면 표시용 이름 반환"
         +isSocialProvider() boolean "소셜 로그인 여부 확인"
+        +isBusinessProvider() boolean "사업자 로그인 여부 확인"
         +getOAuthEndpoint() String "OAuth 인증 엔드포인트 URL"
+        +getSupportedRoles() Set~Role~ "지원하는 사용자 역할 목록"
     }
     
-    %% 사용자 역할 열거형 - 계층적 권한 구조
+    %% 로그인 유형 열거형 - 로그인 방식 구분
+    class LoginType {
+        <<enumeration>>
+        BUSINESS "사업자 로그인 (사업자번호 + 비밀번호, 관리자용)"
+        SOCIAL "소셜 로그인 (카카오/네이버, 개인사용자용)"
+        +getDisplayName() String "화면 표시용 이름 반환"
+        +getAllowedRoles() Set~Role~ "허용되는 사용자 역할 목록"
+        +requiresBusinessNumber() boolean "사업자번호 필요 여부"
+        +requiresPhoneVerification() boolean "휴대폰 인증 필요 여부"
+    }
+    
+    %% 사용자 역할 열거형 - 5단계 계층적 권한 구조
     class Role {
         <<enumeration>>
-        ROLE_SUPER "슈퍼 관리자 (시스템 전체 관리, 모든 테넌트 접근)"
-        ROLE_HQ "본사 관리자 (회사 전체 관리, 단일 테넌트 내 모든 권한)"
-        ROLE_SITE "현장 관리자 (현장별 관리, 배정된 현장의 모든 권한)"
-        ROLE_TEAM "팀장 (팀 단위 관리, 소속 팀원 및 출입 관리)"
-        ROLE_WORKER "작업자 (개인 정보만 접근, 출입 기록 조회)"
-        +getLevel() int "권한 레벨 반환 (숫자가 낮을수록 높은 권한)"
+        ROLE_SUPER "슈퍼관리자 (시스템 전체 관리, 모든 테넌트 접근, 구독 승인)"
+        ROLE_HQ "본사관리자 (회사 전체 관리, 단일 테넌트 내 모든 권한, 사업자번호 로그인)"
+        ROLE_SITE "현장관리자 (현장별 관리, 배정된 현장의 모든 권한, 사업자번호 로그인)"
+        ROLE_TEAM "노무팀장 (팀 단위 관리, 소속 팀원 및 출입 관리, CI값 기반 관리)"
+        ROLE_WORKER "일반노무자 (개인 정보만 접근, 출입 기록 조회, 소셜 로그인)"
+        +getLevel() int "권한 레벨 반환 (1:SUPER, 2:HQ, 3:SITE, 4:TEAM, 5:WORKER)"
         +canAccess(Role targetRole) boolean "대상 역할에 대한 접근 권한 확인"
         +getPermissions() Set~String~ "역할별 권한 목록 반환"
-        +getDisplayName() String "화면 표시용 역할명"
-        +isAdminRole() boolean "관리자 역할 여부 확인"
+        +getDisplayName() String "화면 표시용 역할명 (슈퍼관리자, 본사관리자, 현장관리자, 노무팀장, 일반노무자)"
+        +isAdminRole() boolean "관리자 역할 여부 확인 (SUPER, HQ, SITE)"
+        +isManagerRole() boolean "관리 권한 역할 여부 확인 (SUPER, HQ, SITE, TEAM)"
+        +requiresBusinessLogin() boolean "사업자번호 로그인 필요 여부 (SUPER, HQ, SITE)"
+        +allowsSocialLogin() boolean "소셜 로그인 허용 여부 (TEAM, WORKER)"
     }
     
     %% 사용자 데이터 접근 계층 - JPA Repository 인터페이스
@@ -412,31 +443,41 @@ classDiagram
         +getUserProfile() ResponseEntity "현재 사용자 프로필 조회 API"
     }
     
-    %% 인증 서비스 - 로그인/로그아웃 처리
+    %% 인증 서비스 - 통합 로그인/로그아웃 처리
     class AuthenticationService {
         -UserRepository userRepository "사용자 데이터 접근"
         -JwtTokenProvider jwtTokenProvider "JWT 토큰 생성/검증"
         -PasswordEncoder passwordEncoder "비밀번호 검증"
         -SocialLoginService socialLoginService "소셜 로그인 처리"
-        +login(LoginRequest request) AuthenticationResponse "일반 로그인 처리"
+        -PhoneVerificationService phoneVerificationService "휴대폰 인증 서비스"
+        -BusinessNumberValidator businessNumberValidator "사업자번호 검증 서비스"
+        +businessLogin(BusinessLoginRequest request) AuthenticationResponse "사업자번호 + 비밀번호 로그인"
         +socialLogin(SocialLoginRequest request) AuthenticationResponse "소셜 로그인 처리"
         +logout(String token) "로그아웃 처리 (토큰 무효화)"
         +refreshToken(String refreshToken) TokenResponse "토큰 갱신"
         +validateToken(String token) boolean "토큰 유효성 검증"
+        +verifyPhoneNumber(String phoneNumber) VerificationResult "휴대폰 번호 인증"
+        +validateBusinessNumber(String businessNumber) boolean "사업자번호 유효성 검증"
+        +linkCiValue(String phoneNumber, String ciValue) "CI값 연계 처리"
         -handleLoginFailure(User user) "로그인 실패 처리"
         -handleLoginSuccess(User user) "로그인 성공 처리"
         -generateTokens(User user) TokenPair "액세스/리프레시 토큰 생성"
+        -determineLoginType(LoginRequest request) LoginType "로그인 유형 판별"
+        -validateRolePermission(Role role, LoginType loginType) boolean "역할별 로그인 유형 검증"
     }
     
     %% 관계 설정 및 의존성
     BaseTenantEntity <|-- User : "멀티테넌트 지원 (테넌트별 사용자 격리)"
     User --> Provider : "로그인 제공자 정보 (enum 연관)"
     User --> Role : "사용자 권한 정보 (enum 연관)"
+    User --> LoginType : "로그인 유형 정보 (enum 연관)"
     UserService <|.. UserServiceImpl : "서비스 인터페이스 구현"
     UserServiceImpl --> UserRepository : "데이터 접근 계층 사용"
     UserController --> UserService : "비즈니스 로직 호출"
     UserController --> AuthenticationService : "인증 관련 기능 호출"
     UserServiceImpl --> AuthenticationService : "인증 로직 연동"
+    AuthenticationService --> PhoneVerificationService : "휴대폰 인증 연동"
+    AuthenticationService --> BusinessNumberValidator : "사업자번호 검증 연동"
 ```
 
 ### 주요 기능 설명

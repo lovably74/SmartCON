@@ -32,15 +32,18 @@ public class Tenant extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private SubscriptionStatus status = SubscriptionStatus.TRIAL; // 활성, 중지, 해지
 
     @Column(name = "subscription_plan", length = 50)
     private String planId; // 구독 플랜 ID
 
     @Column(name = "max_sites")
+    @Builder.Default
     private Integer maxSites = 1; // 최대 현장 수
 
     @Column(name = "max_users")
+    @Builder.Default
     private Integer maxUsers = 10; // 최대 사용자 수
 
     @Column(name = "phone_number", length = 20)

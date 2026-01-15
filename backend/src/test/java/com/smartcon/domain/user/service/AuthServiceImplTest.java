@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,11 +50,17 @@ class AuthServiceImplTest {
         );
         passwordEncoder = new BCryptPasswordEncoder();
         
+        // BusinessNumberValidator 모의 객체 생성
+        BusinessNumberValidator businessNumberValidator = Mockito.mock(BusinessNumberValidator.class);
+        Mockito.when(businessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
+        Mockito.when(businessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
+        
         authService = new AuthServiceImpl(
             userRepository,
             jwtTokenService,
             blacklistService,
-            passwordEncoder
+            passwordEncoder,
+            businessNumberValidator
         );
     }
 
@@ -198,7 +205,7 @@ class AuthServiceImplTest {
         
         User user = createValidUser(email, password, tenantId);
         user.setIsEmailVerified(false); // 이메일 미인증
-        user.setProvider(User.Provider.LOCAL); // 로컬 계정
+        user.setBusinessNumber("123-45-67890"); // 사업자 계정
         
         LoginRequest request = LoginRequest.builder()
             .email(email)
@@ -348,9 +355,8 @@ class AuthServiceImplTest {
             .isActive(true)
             .isEmailVerified(true)
             .loginFailureCount(0)
-            .role(User.Role.ROLE_WORKER)
-            .provider(User.Provider.LOCAL)
             .build();
+        user.addRole(User.Role.ROLE_WORKER);
         
         user.setTenantId(Long.parseLong(tenantId));
         user.setId(1L);

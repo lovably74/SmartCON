@@ -1,5 +1,6 @@
 package com.smartcon.domain.user.repository;
 
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -53,12 +54,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
     java.util.Optional<User> findByEmailAndTenantId(String email, Long tenantId);
 
     /**
-     * 역할별 사용자 조회
+     * CI값으로 사용자 조회 (임베디드 객체)
      */
-    List<User> findByRole(User.Role role);
+    @Query("SELECT u FROM User u WHERE u.ciValue.value = :ciValue")
+    java.util.Optional<User> findByCiValueValue(@Param("ciValue") String ciValue);
 
     /**
-     * 테넌트 ID와 역할로 사용자 조회
+     * CI값으로 사용자 조회 (하위 호환성)
      */
-    List<User> findByTenantIdAndRole(Long tenantId, User.Role role);
+    @Deprecated
+    default java.util.Optional<User> findByCiValue(String ciValue) {
+        return findByCiValueValue(ciValue);
+    }
+
+    /**
+     * 사업자번호로 사용자 조회
+     */
+    java.util.Optional<User> findByBusinessNumber(String businessNumber);
+
+    /**
+     * 역할별 사용자 조회 (다중 역할 지원)
+     */
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r = :role")
+    List<User> findByRole(@Param("role") Role role);
+
+    /**
+     * 테넌트 ID와 역할로 사용자 조회 (다중 역할 지원)
+     */
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE u.tenantId = :tenantId AND r = :role")
+    List<User> findByTenantIdAndRole(@Param("tenantId") Long tenantId, @Param("role") Role role);
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -38,7 +39,12 @@ class AuthServiceValidateTokenTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, jwtTokenService, blacklistService, passwordEncoder);
+        // BusinessNumberValidator Mock 생성
+        BusinessNumberValidator mockBusinessNumberValidator = Mockito.mock(BusinessNumberValidator.class);
+        Mockito.when(mockBusinessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
+        Mockito.when(mockBusinessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
+        
+        authService = new AuthServiceImpl(userRepository, jwtTokenService, blacklistService, passwordEncoder, mockBusinessNumberValidator);
     }
 
     @Test

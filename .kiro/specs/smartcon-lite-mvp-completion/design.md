@@ -65,9 +65,9 @@
 │ - status    │     │ - email     │     │ - check_in  │
 │ - plan      │     │ - role      │     │ - check_out │
 └─────────────┘     │ - face_data │     │ - location  │
-                    └─────────────┘     └─────────────┘
-        │                   │
-        ▼                   ▼
+                    └─────────────┘     │ - data_source│
+        │                   │           │ - confidence │
+        ▼                   ▼           └─────────────┘
 ┌─────────────┐     ┌─────────────┐
 │Subscription │     │  Contract   │
 │             │     │             │
@@ -77,6 +77,17 @@
 │ - plan_type │     │ - signed_at │
 │ - start_date│     │ - status    │
 └─────────────┘     └─────────────┘
+        │                   │
+        ▼                   ▼
+┌─────────────┐     ┌─────────────┐
+│FaceRecognition│   │ProjectManager│
+│Device       │     │             │
+│ - id        │     │ - id        │
+│ - project_id│     │ - project_id│
+│ - serial_no │     │ - user_id   │
+│ - api_endpoint│   │ - role      │
+│ - sync_status│    └─────────────┘
+└─────────────┘
 ```
 
 ### 마이그레이션 스크립트 구조
@@ -110,6 +121,8 @@ GET    /api/users/{id}
 PUT    /api/users/{id}
 DELETE /api/users/{id}
 POST   /api/users/{id}/upload-face
+POST   /api/users/{id}/approve
+POST   /api/facenet/worker/register
 ```
 
 ### 테넌트 관리 API
@@ -138,6 +151,8 @@ POST   /api/attendance/check-in
 POST   /api/attendance/check-out
 GET    /api/attendance/today
 GET    /api/attendance/report
+PUT    /api/attendance/{id}/time
+POST   /api/attendance/facenet/sync
 ```
 
 ### 계약 관리 API
@@ -560,13 +575,15 @@ flowchart LR
     C --> D[Generate Embedding]
     D --> E[Store Embedding]
     
-    F[Daily Batch Job] --> G[Filter Scheduled Workers]
+    F[Site Manager Approval] --> G[Filter Approved Workers]
     G --> H[Activate Embeddings]
     H --> I[Face Recognition Device]
     
     J[Check-in/out] --> K[Capture Face]
     K --> L[Match Embedding]
     L --> M[Record Attendance]
+    M --> N[Real-time API Sync]
+    N --> B
 ```
 
 ### FaceNet API 클라이언트
@@ -588,15 +605,40 @@ public class FaceNetService {
     
     public FaceMatchResult matchFace(String faceImageBase64, List<FaceEmbedding> activeEmbeddings) {
         // 얼굴 매칭 수행
-        // 신뢰도 점수 계산
+        // 신뢰도 점수 계산 (최소 0.85 이상)
         // 매칭 결과 반환
     }
     
-    @Scheduled(cron = "0 0 0 * * *") // 매일 자정
-    public void activateDailyEmbeddings() {
-        // 당일 작업 예정자 필터링
-        // 임베딩 활성화
-        // 안면인식기에 데이터 전송
+    public void syncWorkerToDevice(Long workerId, Long siteId) {
+        // 승인된 작업자 정보를 안면인식기에 전송
+        // 임베딩 데이터 동기화
+        // 디바이스 등록 상태 업데이트
+    }
+    
+    @EventListener
+    public void handleWorkerApproval(WorkerApprovalEvent event) {
+        // 작업자 승인시 자동으로 안면인식기에 정보 전달
+        syncWorkerToDevice(event.getWorkerId(), event.getSiteId());
+    }
+}
+```
+
+### 실시간 출역 데이터 처리
+```java
+@RestController
+@RequestMapping("/api/v1/attendance/facenet")
+public class FaceNetAttendanceController {
+    
+    @PostMapping("/sync")
+    public ResponseEntity<ApiResponse> syncAttendanceData(
+            @RequestBody FaceNetAttendanceRequest request) {
+        
+        // 안면인식기로부터 실시간 출역 데이터 수신
+        // 신뢰도 검증 (0.85 이상)
+        // 자동 출역 기록 생성
+        // 승인/반려 과정 없이 바로 처리
+        
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }
 ```

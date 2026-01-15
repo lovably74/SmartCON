@@ -49,7 +49,12 @@ class AuthServiceLogoutPropertyBasedTest {
         // JwtTokenBlacklistService Mock 생성
         JwtTokenBlacklistService mockBlacklistService = Mockito.mock(JwtTokenBlacklistService.class);
         
-        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder);
+        // BusinessNumberValidator Mock 생성
+        BusinessNumberValidator mockBusinessNumberValidator = Mockito.mock(BusinessNumberValidator.class);
+        Mockito.when(mockBusinessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
+        Mockito.when(mockBusinessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
+        
+        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder, mockBusinessNumberValidator);
     }
 
     @Property(tries = 10)

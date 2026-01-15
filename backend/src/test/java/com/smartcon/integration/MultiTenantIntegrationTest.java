@@ -1,6 +1,7 @@
 package com.smartcon.integration;
 
 import com.smartcon.domain.user.dto.LoginResponse;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import com.smartcon.domain.user.repository.UserRepository;
 import com.smartcon.domain.user.service.AuthService;
@@ -77,9 +78,9 @@ public class MultiTenantIntegrationTest extends BaseTestContainersTest {
                 .isActive(true)
                 .isEmailVerified(true)
                 .loginFailureCount(0)
-                .role(User.Role.values()[i % User.Role.values().length]) // 다양한 역할 할당
-                .provider(User.Provider.LOCAL)
                 .build();
+            Role[] roles = {Role.ROLE_SUPER, Role.ROLE_HQ, Role.ROLE_SITE, Role.ROLE_TEAM, Role.ROLE_WORKER};
+            user.addRole(roles[i % roles.length]); // 다양한 역할 할당
             
             user.setTenantId(Long.parseLong(tenantId));
             tenantUsers.add(userRepository.save(user));

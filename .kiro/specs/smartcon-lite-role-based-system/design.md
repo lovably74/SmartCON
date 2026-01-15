@@ -2,12 +2,13 @@
 
 ## Overview
 
-SmartCON Lite 역할 기반 시스템은 건설 현장의 인력 관리를 위한 멀티테넌트 SaaS 플랫폼입니다. 
-5단계 사용자 역할(본사관리자, 현장관리자, 노무팀장, 일반노무자, 슈퍼관리자)별로 최적화된 기능을 제공하며, 
-모바일 우선 설계와 안면인식 기반 출역 관리를 핵심으로 합니다.
+SmartCON Lite 5단계 역할 기반 시스템은 건설 현장의 인력 관리를 위한 멀티테넌트 SaaS 플랫폼입니다. 
+새로운 5단계 사용자 역할(슈퍼관리자, 본사관리자, 현장관리자, 노무팀장, 일반노무자)별로 최적화된 기능을 제공하며, 
+통합 로그인 시스템(관리자: 사업자번호+비밀번호, 개인사용자: 소셜로그인)과 CI값 기반 사용자 관리, 
+모바일 우선 설계와 FaceNet 기반 얼굴인식 출역 관리를 핵심으로 합니다.
 
 시스템은 React + TypeScript 기반 프론트엔드와 Spring Boot + MariaDB 기반 백엔드로 구성되며, 
-Capacitor를 통한 하이브리드 모바일 앱을 지원합니다.
+Capacitor를 통한 하이브리드 모바일 앱을 지원하여 PC웹, 모바일웹, 모바일앱 통합 환경을 제공합니다.
 
 ## Architecture
 
@@ -128,11 +129,19 @@ graph LR
 - **OfflineHandler**: 오프라인 상태 처리
 
 #### Role-specific Components
-- **HQDashboard**: 본사관리자 대시보드
-- **SiteDashboard**: 현장관리자 대시보드  
-- **TeamDashboard**: 노무팀장 대시보드
-- **WorkerDashboard**: 일반노무자 대시보드
-- **SuperAdminDashboard**: 슈퍼관리자 대시보드
+- **SuperAdminDashboard**: 슈퍼관리자 대시보드 (구독 승인, 테넌트 관리)
+- **HQDashboard**: 본사관리자 대시보드 (회사 전체 관리)
+- **SiteDashboard**: 현장관리자 대시보드 (현장별 관리)
+- **TeamDashboard**: 노무팀장 대시보드 (팀 단위 관리)
+- **WorkerDashboard**: 일반노무자 대시보드 (개인 정보 관리)
+
+#### Authentication Components
+- **UnifiedLoginPage**: 통합 로그인 페이지 (개인사용자/관리자 구분)
+- **BusinessLoginForm**: 사업자번호 + 비밀번호 로그인 폼
+- **SocialLoginButtons**: 소셜 로그인 버튼 (카카오, 네이버)
+- **PhoneVerification**: 휴대폰 인증 컴포넌트 (CI값 생성)
+- **RoleSelector**: 역할 선택 컴포넌트
+- **SiteSelector**: 현장 선택 컴포넌트
 
 #### Shared UI Components
 - **DataTable**: 페이징, 정렬, 필터링 지원 테이블
@@ -147,53 +156,119 @@ graph LR
 ```java
 @Service
 public class AuthenticationService {
-    // 소셜 로그인 처리
+    // 통합 로그인 처리
+    public AuthResponse authenticateUnified(UnifiedLoginRequest request);
+    
+    // 소셜 로그인 처리 (노무팀장, 일반노무자)
     public AuthResponse authenticateSocial(SocialLoginRequest request);
     
-    // 사업자 로그인 처리  
+    // 사업자 로그인 처리 (슈퍼관리자, 본사관리자, 현장관리자)
     public AuthResponse authenticateBusiness(BusinessLoginRequest request);
     
-    // 2차 인증 처리
-    public AuthResponse verify2FA(String email, String code);
+    // 휴대폰 인증 및 CI값 생성
+    public CiValueResponse generateCiValue(PhoneVerificationRequest request);
     
     // 토큰 갱신
     public AuthResponse refreshToken(String refreshToken);
+    
+    // 역할별 로그인 유형 검증
+    public boolean validateLoginTypeForRole(Role role, LoginType loginType);
 }
 
 @Service
 public class UserManagementService {
-    // CI 값 기반 사용자 조회/생성
+    // CI값 기반 사용자 조회/생성 (개인사용자용)
     public User findOrCreateUserByCi(String ciValue, SocialProvider provider);
     
-    // 역할 및 현장 선택
+    // 사업자번호 기반 사용자 조회 (관리자용)
+    public User findUserByBusinessNumber(String businessNumber);
+    
+    // 5단계 역할 및 현장 선택
     public List<UserRole> getUserRoles(Long userId);
     public List<Site> getUserSites(Long userId, Role role);
     
-    // 개인정보 관리
+    // 개인정보 관리 (CI값 연계)
     public void updatePersonalInfo(Long userId, PersonalInfoRequest request);
+    
+    // 사업자 정보 관리
+    public void updateBusinessInfo(Long userId, BusinessInfoRequest request);
+}
+
+@Service
+public class SuperAdminService {
+    // 구독 승인 관리
+    public List<SubscriptionApproval> getPendingApprovals();
+    public void approveSubscription(Long subscriptionId, String reason);
+    public void rejectSubscription(Long subscriptionId, String reason);
+    
+    // 테넌트 관리
+    public List<Tenant> getAllTenants(TenantFilter filter);
+    public TenantStatistics getTenantStatistics();
+    
+    // 시스템 모니터링
+    public SystemHealth getSystemHealth();
+    public List<SystemMetrics> getSystemMetrics();
 }
 
 @Service  
 public class ProjectManagementService {
-    // 프로젝트 생성 및 관리
+    // 프로젝트 생성 및 관리 (본사관리자, 현장관리자)
     public Project createProject(CreateProjectRequest request);
     public List<Project> getProjectsByTenant(Long tenantId);
+    public List<Project> getProjectsByManager(Long managerId);
     
-    // 현장 관리자 초대
+    // 현장 관리자 초대 및 배정
     public void inviteSiteManager(Long projectId, InviteManagerRequest request);
+    public void assignSiteManager(Long projectId, Long managerId);
+}
+
+#### Attendance Service (안면인식기 연동 강화)
+```java
+@Service
+public class AttendanceService {
+    // 출역 기록 조회 (역할별 권한 적용)
+    public List<AttendanceRecord> getAttendanceRecords(AttendanceQuery query, Role userRole);
+    
+    // 출근/퇴근 시간 수정 (현장관리자 권한)
+    public void modifyAttendanceTime(Long recordId, TimeModificationRequest request, Long modifierId);
+    
+    // FaceNet 연동 및 동기화
+    public void syncFaceData(Long siteId, LocalDate workDate);
+    public void registerFaceEmbedding(Long userId, String embedding);
+    
+    // 안면인식기 API 연동 - 실시간 출역 데이터 수신
+    public void receiveAttendanceFromFaceNet(FaceNetAttendanceData data);
+    public void validateFaceMatchConfidence(BigDecimal confidence);
+    
+    // 출역 통계 (역할별 범위 적용)
+    public AttendanceStatistics getAttendanceStats(Long siteId, DateRange range, Role userRole);
+    
+    // 출역 수정 (권한 검증 포함) - 승인/반려 제거
+    public void modifyAttendance(Long recordId, AttendanceModification modification, Role userRole);
+    
+    // 안면인식기 디바이스 관리
+    public void syncWorkerToFaceDevice(Long workerId, Long siteId);
+    public DeviceSyncStatus checkDeviceSyncStatus(String deviceSerialNumber);
 }
 
 @Service
-public class AttendanceService {
-    // 출역 기록 조회
-    public List<AttendanceRecord> getAttendanceRecords(AttendanceQuery query);
+public class FaceRecognitionIntegrationService {
+    // 신규 출역자 승인시 안면인식기 자동 연동
+    public void autoSyncWorkerApproval(Long workerId, Long siteId);
     
-    // 안면인식 연동
-    public void syncFaceData(Long siteId, LocalDate workDate);
+    // 안면인식기 API 클라이언트
+    public void registerWorkerToDevice(WorkerFaceData workerData, String deviceSerialNumber);
+    public void removeWorkerFromDevice(Long workerId, String deviceSerialNumber);
     
-    // 출역 통계
-    public AttendanceStatistics getAttendanceStats(Long siteId, DateRange range);
+    // 안면인식기 상태 모니터링
+    public List<FaceDeviceStatus> getDeviceStatusList(Long siteId);
+    public void handleDeviceConnectionFailure(String deviceSerialNumber, Exception error);
+    
+    // 출역 데이터 실시간 수신 처리
+    public void processRealTimeAttendance(FaceNetAttendanceData data);
+    public boolean validateAttendanceData(FaceNetAttendanceData data);
 }
+```
 
 @Service
 public class ContractService {
@@ -203,8 +278,11 @@ public class ContractService {
     // 전자서명 처리
     public void signContract(Long contractId, SignatureData signature);
     
-    // 계약 상태 조회
-    public List<Contract> getContractsByStatus(ContractStatus status);
+    // 계약 상태 조회 (역할별 권한 적용)
+    public List<Contract> getContractsByStatus(ContractStatus status, Role userRole);
+    
+    // 계약 수정 요청 (일반노무자)
+    public void requestContractModification(Long contractId, String modificationRequest);
 }
 ```
 
@@ -212,27 +290,67 @@ public class ContractService {
 
 #### Authentication APIs
 ```http
-POST /api/v1/auth/social/login
+POST /api/v1/auth/unified/login
 Content-Type: application/json
 {
-  "provider": "KAKAO|NAVER",
-  "authCode": "string",
-  "phoneNumber": "string" // 최초 로그인시
+  "loginType": "BUSINESS|SOCIAL",
+  "businessNumber": "string", // 관리자 로그인시
+  "password": "string", // 관리자 로그인시
+  "provider": "KAKAO|NAVER", // 소셜 로그인시
+  "authCode": "string", // 소셜 로그인시
+  "phoneNumber": "string" // 최초 소셜 로그인시
 }
 
-POST /api/v1/auth/business/login  
+POST /api/v1/auth/phone/verify
 Content-Type: application/json
 {
-  "businessNumber": "string",
-  "password": "string"
-}
-
-POST /api/v1/auth/verify-2fa
-Content-Type: application/json
-{
-  "email": "string",
+  "phoneNumber": "string",
   "verificationCode": "string"
 }
+
+POST /api/v1/auth/ci/generate
+Content-Type: application/json
+{
+  "phoneNumber": "string",
+  "verificationToken": "string"
+}
+
+GET /api/v1/auth/roles
+Authorization: Bearer {token}
+
+GET /api/v1/auth/sites?role={role}
+Authorization: Bearer {token}
+```
+
+#### Super Admin APIs
+```http
+GET /api/v1/super-admin/dashboard
+Authorization: Bearer {token}
+
+GET /api/v1/super-admin/subscriptions/pending
+Authorization: Bearer {token}
+Query Parameters: page, size, sort
+
+POST /api/v1/super-admin/subscriptions/{id}/approve
+Authorization: Bearer {token}
+Content-Type: application/json
+{
+  "reason": "string"
+}
+
+POST /api/v1/super-admin/subscriptions/{id}/reject
+Authorization: Bearer {token}
+Content-Type: application/json
+{
+  "reason": "string"
+}
+
+GET /api/v1/super-admin/tenants
+Authorization: Bearer {token}
+Query Parameters: status, search, page, size
+
+GET /api/v1/super-admin/system/health
+Authorization: Bearer {token}
 ```
 
 #### User Management APIs
@@ -313,33 +431,63 @@ public class User extends BaseTenantEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true)
-    private String email;
-    
     @Column(nullable = false)
     private String name;
+    
+    @Column(name = "email")
+    private String email;
     
     @Column(name = "phone_number")
     private String phoneNumber;
     
     @Column(name = "ci_value", unique = true)
-    private String ciValue; // 전화번호 인증 CI값
+    private String ciValue; // 휴대폰 인증 CI값 (개인사용자 식별용)
+    
+    @Column(name = "business_number")
+    private String businessNumber; // 사업자등록번호 (관리자 로그인용)
     
     @Enumerated(EnumType.STRING)
     private AuthProvider provider; // LOCAL, KAKAO, NAVER
+    
+    @Enumerated(EnumType.STRING)
+    private LoginType loginType; // BUSINESS, SOCIAL
     
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles = new HashSet<>();
     
+    @Column(name = "password_hash")
+    private String passwordHash; // 사업자 로그인용 (소셜 로그인시 null)
+    
     @Column(name = "is_active")
     private Boolean isActive = true;
+    
+    @Column(name = "is_phone_verified")
+    private Boolean isPhoneVerified = false;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<SocialAccount> socialAccounts = new ArrayList<>();
     
     @Embedded
     private PersonalInfo personalInfo;
+    
+    @Embedded
+    private BusinessInfo businessInfo; // 관리자용 사업자 정보
+    
+    // CI값 기반 사용자 식별 메서드
+    public boolean isSamePersonAs(String ciValue) {
+        return this.ciValue != null && this.ciValue.equals(ciValue);
+    }
+    
+    // 로그인 유형별 검증 메서드
+    public boolean canUseLoginType(LoginType loginType) {
+        return switch (loginType) {
+            case BUSINESS -> roles.stream().anyMatch(role -> 
+                role == Role.ROLE_SUPER || role == Role.ROLE_HQ || role == Role.ROLE_SITE);
+            case SOCIAL -> roles.stream().anyMatch(role -> 
+                role == Role.ROLE_TEAM || role == Role.ROLE_WORKER);
+        };
+    }
 }
 
 @Embeddable
@@ -353,11 +501,41 @@ public class PersonalInfo {
     private BankAccount bankAccount;
 }
 
-@Embeddable  
-public class BankAccount {
-    private String bankName;
-    private String accountNumber; // 암호화 저장
-    private String accountHolder;
+@Embeddable
+public class BusinessInfo {
+    private String companyName;
+    private String businessRegistrationNumber;
+    private String representativeName;
+    private String businessAddress;
+    private String businessPhone;
+    private String businessEmail;
+}
+
+@Entity
+@Table(name = "social_accounts")
+public class SocialAccount extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+    
+    @Enumerated(EnumType.STRING)
+    private SocialProvider provider; // KAKAO, NAVER
+    
+    @Column(name = "provider_id")
+    private String providerId; // 소셜 제공자의 사용자 ID
+    
+    @Column(name = "provider_email")
+    private String providerEmail;
+    
+    @Column(name = "linked_at")
+    private LocalDateTime linkedAt;
+    
+    @Column(name = "is_primary")
+    private Boolean isPrimary = false; // 주 계정 여부
 }
 ```
 
@@ -497,40 +675,147 @@ public class Contract extends BaseTenantEntity {
 
 ```java
 public enum Role {
-    ROLE_SUPER,      // 슈퍼관리자
-    ROLE_HQ,         // 본사관리자  
-    ROLE_SITE,       // 현장관리자
-    ROLE_TEAM,       // 노무팀장
-    ROLE_WORKER      // 일반노무자
+    ROLE_SUPER(1, "슈퍼관리자"),      // 시스템 전체 관리, 구독 승인
+    ROLE_HQ(2, "본사관리자"),         // 회사 전체 관리, 사업자번호 로그인
+    ROLE_SITE(3, "현장관리자"),       // 현장별 관리, 사업자번호 로그인
+    ROLE_TEAM(4, "노무팀장"),         // 팀 단위 관리, 소셜 로그인
+    ROLE_WORKER(5, "일반노무자");     // 개인 정보 관리, 소셜 로그인
+    
+    private final int level;
+    private final String displayName;
+    
+    Role(int level, String displayName) {
+        this.level = level;
+        this.displayName = displayName;
+    }
+    
+    public boolean canAccess(Role targetRole) {
+        return this.level <= targetRole.level;
+    }
+    
+    public boolean requiresBusinessLogin() {
+        return this == ROLE_SUPER || this == ROLE_HQ || this == ROLE_SITE;
+    }
+    
+    public boolean allowsSocialLogin() {
+        return this == ROLE_TEAM || this == ROLE_WORKER;
+    }
+}
+
+public enum LoginType {
+    BUSINESS("사업자 로그인"),    // 사업자번호 + 비밀번호 (관리자용)
+    SOCIAL("소셜 로그인");       // 카카오/네이버 (개인사용자용)
+    
+    private final String displayName;
+    
+    LoginType(String displayName) {
+        this.displayName = displayName;
+    }
+    
+    public Set<Role> getAllowedRoles() {
+        return switch (this) {
+            case BUSINESS -> Set.of(Role.ROLE_SUPER, Role.ROLE_HQ, Role.ROLE_SITE);
+            case SOCIAL -> Set.of(Role.ROLE_TEAM, Role.ROLE_WORKER);
+        };
+    }
 }
 
 public enum AuthProvider {
-    LOCAL,    // 사업자번호 + 비밀번호
-    KAKAO,    // 카카오 소셜 로그인
-    NAVER     // 네이버 소셜 로그인
+    LOCAL("일반 로그인"),      // 사업자번호 + 비밀번호
+    KAKAO("카카오"),          // 카카오 소셜 로그인
+    NAVER("네이버");          // 네이버 소셜 로그인
+    
+    private final String displayName;
+    
+    AuthProvider(String displayName) {
+        this.displayName = displayName;
+    }
+    
+    public boolean isSocialProvider() {
+        return this == KAKAO || this == NAVER;
+    }
+    
+    public LoginType getLoginType() {
+        return isSocialProvider() ? LoginType.SOCIAL : LoginType.BUSINESS;
+    }
+}
+
+public enum SocialProvider {
+    KAKAO("카카오", "https://kauth.kakao.com/oauth/authorize"),
+    NAVER("네이버", "https://nid.naver.com/oauth2.0/authorize");
+    
+    private final String displayName;
+    private final String authUrl;
+    
+    SocialProvider(String displayName, String authUrl) {
+        this.displayName = displayName;
+        this.authUrl = authUrl;
+    }
 }
 
 public enum JobType {
-    EARTHWORK,        // 토공
-    CONCRETE,         // 콘크리트공
-    REBAR,           // 철근공
-    MASONRY,         // 조적공
-    CARPENTRY,       // 목공
-    GENERAL_LABOR    // 일반인부
+    EARTHWORK("토공"),        // 토공
+    CONCRETE("콘크리트공"),    // 콘크리트공
+    REBAR("철근공"),          // 철근공
+    MASONRY("조적공"),        // 조적공
+    CARPENTRY("목공"),        // 목공
+    GENERAL_LABOR("일반인부"); // 일반인부
+    
+    private final String displayName;
+    
+    JobType(String displayName) {
+        this.displayName = displayName;
+    }
 }
 
 public enum ProjectStatus {
-    PLANNING,   // 계획중
-    ACTIVE,     // 진행중
-    PAUSED,     // 일시중지
-    COMPLETED   // 완료
+    PLANNING("계획중"),   // 계획중
+    ACTIVE("진행중"),     // 진행중
+    PAUSED("일시중지"),   // 일시중지
+    COMPLETED("완료");    // 완료
+    
+    private final String displayName;
+    
+    ProjectStatus(String displayName) {
+        this.displayName = displayName;
+    }
 }
 
 public enum ContractStatus {
-    PENDING,    // 서명대기
-    SIGNED,     // 서명완료
-    EXPIRED,    // 만료
-    CANCELLED   // 취소
+    PENDING("서명대기"),    // 서명대기
+    SIGNED("서명완료"),     // 서명완료
+    EXPIRED("만료"),        // 만료
+    CANCELLED("취소");      // 취소
+    
+    private final String displayName;
+    
+    ContractStatus(String displayName) {
+        this.displayName = displayName;
+    }
+}
+
+// CI값 관리를 위한 Value Object
+@Embeddable
+public class CiValue {
+    @Column(name = "ci_value")
+    private String value;
+    
+    @Column(name = "ci_generated_at")
+    private LocalDateTime generatedAt;
+    
+    @Column(name = "ci_phone_number")
+    private String phoneNumber; // CI값 생성에 사용된 휴대폰 번호 (암호화)
+    
+    public CiValue(String phoneNumber) {
+        this.value = generateCiValue(phoneNumber);
+        this.generatedAt = LocalDateTime.now();
+        this.phoneNumber = encryptPhoneNumber(phoneNumber);
+    }
+    
+    private String generateCiValue(String phoneNumber) {
+        // 실제 구현에서는 통신사 CI값 생성 로직 사용
+        return "CI_" + DigestUtils.sha256Hex(phoneNumber + System.currentTimeMillis());
+    }
 }
 ```
 
@@ -623,6 +908,10 @@ After analyzing the acceptance criteria, several properties can be consolidated 
 **Property 16: Concurrent Access Data Integrity**
 *For any* concurrent operations on shared data, the system should maintain data consistency and prevent race conditions or data corruption
 **Validates: Requirements 30.2**
+
+**Property 17: Face Recognition Integration Reliability**
+*For any* worker approval and face recognition device registration, the system should successfully sync worker data to all associated devices and maintain accurate sync status tracking
+**Validates: Requirements 31.1, 31.3, 31.4**
 
 ## Error Handling
 

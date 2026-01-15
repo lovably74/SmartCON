@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcon.domain.user.dto.LoginRequest;
 import com.smartcon.domain.user.dto.LoginResponse;
 import com.smartcon.domain.user.dto.RefreshTokenRequest;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import com.smartcon.domain.user.repository.UserRepository;
 import com.smartcon.domain.user.service.AuthService;
@@ -90,9 +91,8 @@ public class JwtAuthenticationIntegrationTest extends BaseTestContainersTest {
             .isActive(true)
             .isEmailVerified(true)
             .loginFailureCount(0)
-            .role(User.Role.ROLE_HQ)
-            .provider(User.Provider.LOCAL)
             .build();
+        testUser1.addRole(Role.ROLE_HQ);
         testUser1.setTenantId(Long.parseLong(tenant1Id));
         testUser1 = userRepository.save(testUser1);
         
@@ -104,9 +104,8 @@ public class JwtAuthenticationIntegrationTest extends BaseTestContainersTest {
             .isActive(true)
             .isEmailVerified(true)
             .loginFailureCount(0)
-            .role(User.Role.ROLE_SITE)
-            .provider(User.Provider.LOCAL)
             .build();
+        testUser2.addRole(Role.ROLE_SITE);
         testUser2.setTenantId(Long.parseLong(tenant2Id));
         testUser2 = userRepository.save(testUser2);
         

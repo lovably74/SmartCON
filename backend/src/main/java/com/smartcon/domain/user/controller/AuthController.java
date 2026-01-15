@@ -1,8 +1,6 @@
 package com.smartcon.domain.user.controller;
 
-import com.smartcon.domain.user.dto.LoginRequest;
-import com.smartcon.domain.user.dto.LoginResponse;
-import com.smartcon.domain.user.dto.RefreshTokenRequest;
+import com.smartcon.domain.user.dto.*;
 import com.smartcon.domain.user.service.AuthService;
 import com.smartcon.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -24,7 +22,101 @@ public class AuthController {
     private final AuthService authService;
 
     /**
-     * 사용자 로그인
+     * 통합 로그인 (개인사용자/관리자 구분)
+     */
+    @PostMapping("/unified/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> unifiedLogin(@Valid @RequestBody UnifiedLoginRequest request) {
+        log.info("통합 로그인 API 호출 - 로그인 유형: {}", request.getLoginType());
+
+        try {
+            LoginResponse response = authService.authenticateUnified(request);
+            return ResponseEntity.ok(ApiResponse.success(response, "로그인이 성공했습니다"));
+        } catch (IllegalArgumentException e) {
+            log.warn("통합 로그인 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("LOGIN_FAILED", e.getMessage()));
+        } catch (Exception e) {
+            log.error("통합 로그인 처리 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("INTERNAL_ERROR", "로그인 처리 중 오류가 발생했습니다"));
+        }
+    }
+
+    /**
+     * 휴대폰 인증 및 CI값 생성
+     */
+    @PostMapping("/phone/verify")
+    public ResponseEntity<ApiResponse<CiValueResponse>> verifyPhone(@Valid @RequestBody PhoneVerificationRequest request) {
+        log.info("휴대폰 인증 API 호출 - 휴대폰: {}", request.getPhoneNumber());
+
+        try {
+            CiValueResponse response = authService.generateCiValue(request);
+            return ResponseEntity.ok(ApiResponse.success(response, "CI값이 생성되었습니다"));
+        } catch (IllegalArgumentException e) {
+            log.warn("휴대폰 인증 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("VERIFICATION_FAILED", e.getMessage()));
+        } catch (Exception e) {
+            log.error("휴대폰 인증 처리 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("INTERNAL_ERROR", "휴대폰 인증 처리 중 오류가 발생했습니다"));
+        }
+    }
+
+    /**
+     * 사용자 역할 목록 조회
+     */
+    @GetMapping("/roles")
+    public ResponseEntity<ApiResponse<UserRolesResponse>> getUserRoles(@RequestHeader("Authorization") String authHeader) {
+        log.info("사용자 역할 조회 API 호출");
+
+        try {
+            // TODO: JWT 토큰에서 사용자 ID 추출
+            // 현재는 임시로 하드코딩
+            Long userId = 1L;
+            
+            UserRolesResponse response = authService.getUserRoles(userId);
+            return ResponseEntity.ok(ApiResponse.success(response, "역할 목록을 조회했습니다"));
+        } catch (IllegalArgumentException e) {
+            log.warn("역할 조회 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("ROLE_QUERY_FAILED", e.getMessage()));
+        } catch (Exception e) {
+            log.error("역할 조회 처리 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("INTERNAL_ERROR", "역할 조회 처리 중 오류가 발생했습니다"));
+        }
+    }
+
+    /**
+     * 역할 선택 및 토큰 재발급
+     */
+    @PostMapping("/roles/select")
+    public ResponseEntity<ApiResponse<LoginResponse>> selectRole(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody RoleSelectionRequest request) {
+        log.info("역할 선택 API 호출 - 선택 역할: {}", request.getRole());
+
+        try {
+            // TODO: JWT 토큰에서 사용자 ID 추출
+            // 현재는 임시로 하드코딩
+            Long userId = 1L;
+            
+            LoginResponse response = authService.selectRole(userId, request);
+            return ResponseEntity.ok(ApiResponse.success(response, "역할이 선택되었습니다"));
+        } catch (IllegalArgumentException e) {
+            log.warn("역할 선택 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("ROLE_SELECTION_FAILED", e.getMessage()));
+        } catch (Exception e) {
+            log.error("역할 선택 처리 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("INTERNAL_ERROR", "역할 선택 처리 중 오류가 발생했습니다"));
+        }
+    }
+
+    /**
+     * 사용자 로그인 (기존 방식 - 하위 호환성 유지)
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {

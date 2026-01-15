@@ -1,9 +1,11 @@
 package com.smartcon.global.config;
 
 import com.smartcon.global.security.JwtAuthenticationFilter;
+import com.smartcon.global.security.RoleBasedAccessControl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,15 +21,17 @@ import java.util.Arrays;
 
 /**
  * Spring Security 설정 클래스
- * 구독 승인 워크플로우를 위한 권한 기반 접근 제어 강화
- * JWT 토큰 검증 및 역할 기반 접근 제어 구현
+ * 5단계 역할 기반 접근 제어 (RBAC) 구현
+ * JWT 토큰 검증 및 계층적 권한 구조 적용
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // @PreAuthorize, @PostAuthorize 활성화
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RoleBasedAccessControl roleBasedAccessControl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -44,7 +48,7 @@ public class SecurityConfig {
             // JWT 인증 필터 추가
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             
-            // 권한 설정 - 구독 승인 워크플로우 보안 강화
+            // 권한 설정 - 5단계 역할 기반 접근 제어
             .authorizeHttpRequests(auth -> auth
                 // H2 콘솔 접근 허용 (개발용)
                 .requestMatchers("/h2-console/**").permitAll()
@@ -60,25 +64,37 @@ public class SecurityConfig {
                 .requestMatchers("/v1/subscriptions/create").permitAll()
                 .requestMatchers("/v1/subscriptions/current").permitAll()
                 
-                // 슈퍼관리자 전용 API - 강화된 보안 (JWT 필터에서 처리)
+                // === 슈퍼관리자 전용 API (ROLE_SUPER) ===
                 .requestMatchers("/v1/admin/**").hasRole("SUPER")
-                
-                // 구독 승인 관련 API - 슈퍼관리자 전용
                 .requestMatchers("/v1/admin/subscriptions/**").hasRole("SUPER")
-                
-                // 자동 승인 규칙 관리 - 슈퍼관리자 전용
                 .requestMatchers("/v1/admin/auto-approval/**").hasRole("SUPER")
-                
-                // 알림 관리 - 슈퍼관리자 전용
                 .requestMatchers("/v1/admin/notifications/**").hasRole("SUPER")
-                
-                // 테넌트 관리 - 슈퍼관리자 전용
                 .requestMatchers("/v1/admin/tenants/**").hasRole("SUPER")
-                
-                // 시스템 모니터링 - 슈퍼관리자 전용
                 .requestMatchers("/v1/admin/system/**").hasRole("SUPER")
                 .requestMatchers("/v1/admin/dashboard/**").hasRole("SUPER")
                 .requestMatchers("/v1/admin/billing/**").hasRole("SUPER")
+                
+                // === 본사관리자 이상 API (ROLE_HQ, ROLE_SUPER) ===
+                .requestMatchers("/v1/hq/**").hasAnyRole("HQ", "SUPER")
+                .requestMatchers("/v1/projects/create").hasAnyRole("HQ", "SUPER")
+                .requestMatchers("/v1/projects/*/delete").hasAnyRole("HQ", "SUPER")
+                .requestMatchers("/v1/users/admins/**").hasAnyRole("HQ", "SUPER")
+                
+                // === 현장관리자 이상 API (ROLE_SITE, ROLE_HQ, ROLE_SUPER) ===
+                .requestMatchers("/v1/site/**").hasAnyRole("SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/attendance/modify").hasAnyRole("SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/workers/approve").hasAnyRole("SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/contracts/*/resend").hasAnyRole("SITE", "HQ", "SUPER")
+                
+                // === 노무팀장 이상 API (ROLE_TEAM, ROLE_SITE, ROLE_HQ, ROLE_SUPER) ===
+                .requestMatchers("/v1/team/**").hasAnyRole("TEAM", "SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/attendance/team/**").hasAnyRole("TEAM", "SITE", "HQ", "SUPER")
+                
+                // === 일반노무자 이상 API (모든 인증된 사용자) ===
+                .requestMatchers("/v1/worker/**").hasAnyRole("WORKER", "TEAM", "SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/profile/**").hasAnyRole("WORKER", "TEAM", "SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/attendance/my/**").hasAnyRole("WORKER", "TEAM", "SITE", "HQ", "SUPER")
+                .requestMatchers("/v1/contracts/my/**").hasAnyRole("WORKER", "TEAM", "SITE", "HQ", "SUPER")
                 
                 // 일반 API - 인증 필요 (개발 단계에서는 임시로 허용)
                 .requestMatchers("/v1/**").permitAll()
@@ -87,9 +103,9 @@ public class SecurityConfig {
                 .anyRequest().permitAll()
             )
             
-            // H2 콘솔을 위한 헤더 설정 (deprecated 메서드 대신 새로운 방식 사용)
+            // H2 콘솔을 위한 헤더 설정
             .headers(headers -> headers
-                .frameOptions().sameOrigin()
+                .frameOptions(frameOptions -> frameOptions.sameOrigin())
             );
 
         return http.build();

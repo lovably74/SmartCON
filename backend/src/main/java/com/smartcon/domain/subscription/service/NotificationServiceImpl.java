@@ -6,6 +6,7 @@ import com.smartcon.domain.subscription.entity.NotificationType;
 import com.smartcon.domain.subscription.entity.Subscription;
 import com.smartcon.domain.subscription.repository.NotificationRepository;
 import com.smartcon.domain.subscription.repository.SubscriptionRepository;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import com.smartcon.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,7 @@ public class NotificationServiceImpl implements NotificationService {
             Subscription subscription = subscriptionOpt.get();
             
             // 슈퍼관리자들에게 알림 발송
-            List<User> superAdmins = userRepository.findByRole(User.Role.ROLE_SUPER);
+            List<User> superAdmins = userRepository.findByRole(Role.ROLE_SUPER);
             
             for (User admin : superAdmins) {
                 Notification notification = Notification.builder()
@@ -94,7 +95,7 @@ public class NotificationServiceImpl implements NotificationService {
             
             // 테넌트의 관리자들에게 알림 발송
             List<User> tenantAdmins = userRepository.findByTenantIdAndRole(
-                    subscription.getTenant().getId(), User.Role.ROLE_HQ);
+                    subscription.getTenant().getId(), Role.ROLE_HQ);
             
             NotificationType notificationType = approved ? 
                     NotificationType.SUBSCRIPTION_APPROVED : 
@@ -137,7 +138,7 @@ public class NotificationServiceImpl implements NotificationService {
                 if (subscription.getApprovalRequestedAt() != null &&
                     subscription.getApprovalRequestedAt().isBefore(LocalDateTime.now().minusDays(7))) {
                     
-                    List<User> superAdmins = userRepository.findByRole(User.Role.ROLE_SUPER);
+                    List<User> superAdmins = userRepository.findByRole(Role.ROLE_SUPER);
                     
                     for (User admin : superAdmins) {
                         Notification notification = Notification.builder()
@@ -274,7 +275,7 @@ public class NotificationServiceImpl implements NotificationService {
             
             // 테넌트의 관리자들에게 알림 발송
             List<User> tenantAdmins = userRepository.findByTenantIdAndRole(
-                    subscription.getTenant().getId(), User.Role.ROLE_HQ);
+                    subscription.getTenant().getId(), Role.ROLE_HQ);
             
             for (User admin : tenantAdmins) {
                 Notification notification = Notification.builder()

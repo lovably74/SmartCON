@@ -198,7 +198,7 @@ SmartCON Lite 프로젝트의 MVP(Minimum Viable Product) 완성을 위한 요�
 7. THE Backend_API SHALL track contract status (pending, signed, expired) and send reminders
 8. THE Backend_API SHALL provide contract history and download functionality for all parties
 
-### 요구사항 13: FaceNet 안면인식 연동
+### 요구사항 13: FaceNet 안면인식 연동 (개선)
 
 **사용자 스토리:** 작업자로서, 안면인식을 통해 자동으로 출입을 체크할 수 있어야 하므로, 편리하고 정확한 출역 관리가 가능합니다.
 
@@ -212,6 +212,10 @@ SmartCON Lite 프로젝트의 MVP(Minimum Viable Product) 완성을 위한 요�
 6. THE Backend_API SHALL automatically deactivate face embeddings when work assignment ends
 7. THE Backend_API SHALL handle FaceNet API failures gracefully with manual check-in fallback
 8. THE Backend_API SHALL log all face recognition attempts for audit and debugging purposes
+9. **WHEN site manager approves new worker, THE Backend_API SHALL automatically transmit worker information to face recognition devices**
+10. **THE Backend_API SHALL receive real-time attendance data from face recognition devices via API integration**
+11. **THE Backend_API SHALL process attendance records automatically without requiring approval/rejection workflow**
+12. **THE Backend_API SHALL allow site managers to modify check-in and check-out times with reason tracking**
 
 ### 요구사항 14: 딥링크 및 모바일 최적화
 
