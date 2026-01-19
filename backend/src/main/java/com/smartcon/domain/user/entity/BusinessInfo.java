@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.util.DigestUtils;
 
 /**
  * 사업자 정보를 위한 임베디드 엔티티
@@ -42,7 +41,7 @@ public class BusinessInfo {
     @Column(name = "business_email", length = 100)
     private String businessEmail; // 사업장 이메일
 
-    @Column(name = "is_verified")
+    @Column(name = "business_is_verified")
     @Builder.Default
     private Boolean isVerified = false; // 사업자 인증 여부
 
@@ -51,14 +50,16 @@ public class BusinessInfo {
 
     /**
      * 사업자번호 설정 (암호화하여 저장)
+     * 주의: 이 메서드는 EncryptionService를 통해 호출되어야 합니다
      * @param businessNumber 사업자번호
+     * @param encryptedValue 암호화된 사업자번호 (EncryptionService에서 생성)
      */
-    public void setBusinessNumber(String businessNumber) {
+    public void setBusinessNumber(String businessNumber, String encryptedValue) {
         if (businessNumber != null && !businessNumber.trim().isEmpty()) {
             // 숫자만 추출
             String cleanNumber = businessNumber.replaceAll("[^0-9]", "");
             if (cleanNumber.length() == 10) {
-                this.encryptedBusinessNumber = encryptSensitiveData(cleanNumber);
+                this.encryptedBusinessNumber = encryptedValue;
             }
         } else {
             this.encryptedBusinessNumber = null;
@@ -67,14 +68,31 @@ public class BusinessInfo {
 
     /**
      * 마스킹된 사업자번호 반환
-     * @return 마스킹된 사업자번호 (예: 123-**-*****) 
+     * @param decryptedBusinessNumber 복호화된 사업자번호 (EncryptionService에서 복호화)
+     * @return 마스킹된 사업자번호 (예: 123-**-*****)
+     */
+    public String getMaskedBusinessNumber(String decryptedBusinessNumber) {
+        if (decryptedBusinessNumber == null || decryptedBusinessNumber.length() < 8) {
+            return "***-**-*****";
+        }
+
+        String cleaned = decryptedBusinessNumber.replaceAll("[^0-9]", "");
+        if (cleaned.length() == 10) {
+            return cleaned.substring(0, 3) + "-**-*****";
+        }
+
+        return "***-**-*****";
+    }
+    
+    /**
+     * 마스킹된 사업자번호 반환 (암호화된 값만 있을 때)
+     * @return 마스킹된 사업자번호 (예: ***-**-*****)
      */
     public String getMaskedBusinessNumber() {
         if (encryptedBusinessNumber == null || encryptedBusinessNumber.trim().isEmpty()) {
             return null;
         }
-        
-        // 실제로는 복호화 후 마스킹해야 하지만, 개발용으로 패턴만 반환
+        // 복호화 없이 기본 마스킹 패턴 반환
         return "***-**-*****";
     }
 
@@ -141,61 +159,6 @@ public class BusinessInfo {
         if (canVerify()) {
             this.isVerified = true;
         }
-    }
-
-    /**
-     * 민감한 데이터 암호화
-     * @param data 원본 데이터
-     * @return 암호화된 데이터
-     */
-    private String encryptSensitiveData(String data) {
-        // 개발용 간단한 암호화 (실제 운영에서는 AES-256 사용)
-        String salt = "SMARTCON_BUSINESS_INFO_SALT";
-        return DigestUtils.md5DigestAsHex((salt + data).getBytes());
-    }
-
-    /**
-     * 사업자번호 유효성 검증
-     * @param businessNumber 사업자번호
-     * @return 유효하면 true
-     */
-    public static boolean isValidBusinessNumber(String businessNumber) {
-        if (businessNumber == null) return false;
-        
-        String cleanNumber = businessNumber.replaceAll("[^0-9]", "");
-        if (cleanNumber.length() != 10) return false;
-        
-        // 모든 자리가 0인 경우 무효
-        if (cleanNumber.equals("0000000000")) return false;
-        
-        // 모든 자리가 같은 숫자인 경우 무효 (예: 1111111111, 2222222222)
-        char firstDigit = cleanNumber.charAt(0);
-        boolean allSame = true;
-        for (int i = 1; i < cleanNumber.length(); i++) {
-            if (cleanNumber.charAt(i) != firstDigit) {
-                allSame = false;
-                break;
-            }
-        }
-        if (allSame) return false;
-        
-        // 사업자번호 체크섬 검증 (한국 국세청 알고리즘)
-        int[] weights = {1, 3, 7, 1, 3, 7, 1, 3, 5};
-        int sum = 0;
-        
-        // 첫 8자리까지 가중치 곱셈
-        for (int i = 0; i < 8; i++) {
-            sum += Character.getNumericValue(cleanNumber.charAt(i)) * weights[i];
-        }
-        
-        // 9번째 자리는 특별 처리 (5를 곱하고 10으로 나눈 몫을 더함)
-        sum += (Character.getNumericValue(cleanNumber.charAt(8)) * 5) / 10;
-        
-        // 체크 디지트 계산
-        int remainder = sum % 10;
-        int checkDigit = remainder == 0 ? 0 : 10 - remainder;
-        
-        return checkDigit == Character.getNumericValue(cleanNumber.charAt(9));
     }
 
     /**

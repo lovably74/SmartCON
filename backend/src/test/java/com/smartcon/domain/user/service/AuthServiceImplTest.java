@@ -3,6 +3,7 @@ package com.smartcon.domain.user.service;
 import com.smartcon.domain.user.dto.LoginRequest;
 import com.smartcon.domain.user.dto.LoginResponse;
 import com.smartcon.domain.user.dto.RefreshTokenRequest;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import com.smartcon.domain.user.repository.UserRepository;
 import com.smartcon.global.security.JwtTokenService;
@@ -39,6 +40,7 @@ class AuthServiceImplTest {
     private JwtTokenService jwtTokenService;
     private PasswordEncoder passwordEncoder;
     private AuthService authService;
+    private AuthenticationAuditService auditService;
 
     @BeforeEach
     void setUp() {
@@ -55,12 +57,16 @@ class AuthServiceImplTest {
         Mockito.when(businessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
         Mockito.when(businessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
         
+        // AuthenticationAuditService 모의 객체 생성
+        auditService = Mockito.mock(AuthenticationAuditService.class);
+        
         authService = new AuthServiceImpl(
             userRepository,
             jwtTokenService,
             blacklistService,
             passwordEncoder,
-            businessNumberValidator
+            businessNumberValidator,
+            auditService
         );
     }
 
@@ -356,7 +362,7 @@ class AuthServiceImplTest {
             .isEmailVerified(true)
             .loginFailureCount(0)
             .build();
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
         
         user.setTenantId(Long.parseLong(tenantId));
         user.setId(1L);

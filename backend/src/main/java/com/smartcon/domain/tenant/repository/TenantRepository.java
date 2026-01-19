@@ -58,4 +58,17 @@ public interface TenantRepository extends JpaRepository<Tenant, Long> {
      * 최근 생성된 테넌트 목록 조회
      */
     List<Tenant> findTop10ByOrderByCreatedAtDesc();
+
+    // ========== 대시보드용 통계 메서드 ==========
+
+    /**
+     * 활성 테넌트 수 조회
+     */
+    @Query("SELECT COUNT(t) FROM Tenant t WHERE t.isActive = true")
+    long countByIsActive(@Param("isActive") boolean isActive);
+
+    /**
+     * 최근 가입 테넌트 조회 (상위 5개)
+     */
+    List<Tenant> findTop5ByOrderByCreatedAtDesc();
 }

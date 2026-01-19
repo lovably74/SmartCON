@@ -169,7 +169,7 @@ class PersonalInfoTest {
                 .authProvider(AuthProvider.KAKAO)
                 .loginType(LoginType.SOCIAL)
                 .build();
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
 
         // When: 개인정보 초기화 및 설정
         user.initializePersonalInfo();
@@ -204,7 +204,7 @@ class PersonalInfoTest {
                 .loginType(LoginType.BUSINESS)
                 .businessNumber("1208800767")
                 .build();
-        admin.addRole(User.Role.ROLE_HQ);
+        admin.addRole(Role.ROLE_HQ);
 
         // When: 사업자 정보 초기화 및 설정
         admin.initializeBusinessInfo();

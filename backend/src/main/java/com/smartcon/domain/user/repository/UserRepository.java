@@ -83,4 +83,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u JOIN u.roles r WHERE u.tenantId = :tenantId AND r = :role")
     List<User> findByTenantIdAndRole(@Param("tenantId") Long tenantId, @Param("role") Role role);
+
+    // ========== 대시보드용 통계 메서드 ==========
+
+    /**
+     * 특정 역할을 가진 사용자 수 조회 (슈퍼관리자용)
+     */
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r = :role")
+    long countByRolesContaining(@Param("role") Role role);
+
+    /**
+     * 테넌트별 특정 역할을 가진 사용자 수 조회
+     */
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE u.tenantId = :tenantId AND r = :role")
+    long countByTenantIdAndRolesContaining(@Param("tenantId") String tenantId, @Param("role") Role role);
 }

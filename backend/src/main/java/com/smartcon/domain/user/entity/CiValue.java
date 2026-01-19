@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.util.DigestUtils;
 
 import java.time.LocalDateTime;
 
@@ -35,34 +34,24 @@ public class CiValue {
 
     /**
      * 휴대폰 번호로 CI값 생성
+     * 주의: 이 생성자는 CiValueValidator를 통해 호출되어야 합니다
      * @param phoneNumber 휴대폰 번호
      */
     public CiValue(String phoneNumber) {
-        this.value = generateCiValue(phoneNumber);
+        this.value = null; // CiValueValidator에서 설정
         this.generatedAt = LocalDateTime.now();
-        this.phoneNumber = encryptPhoneNumber(phoneNumber);
+        this.phoneNumber = null; // EncryptionService에서 암호화하여 설정
     }
 
     /**
-     * CI값 생성 로직
-     * 실제 구현에서는 통신사 CI값 생성 로직 사용
-     * @param phoneNumber 휴대폰 번호
-     * @return 생성된 CI값
+     * CI값 생성 (외부에서 생성된 값 사용)
+     * @param ciValue 생성된 CI값
+     * @param encryptedPhoneNumber 암호화된 휴대폰 번호
      */
-    private String generateCiValue(String phoneNumber) {
-        // 개발용 CI값 생성 (실제 운영에서는 통신사 API 사용)
-        String seed = phoneNumber + System.currentTimeMillis();
-        return "CI_" + DigestUtils.md5DigestAsHex(seed.getBytes());
-    }
-
-    /**
-     * 휴대폰 번호 암호화
-     * @param phoneNumber 원본 휴대폰 번호
-     * @return 암호화된 휴대폰 번호
-     */
-    private String encryptPhoneNumber(String phoneNumber) {
-        // 개발용 간단한 암호화 (실제 운영에서는 AES 등 사용)
-        return DigestUtils.md5DigestAsHex(phoneNumber.getBytes());
+    public CiValue(String ciValue, String encryptedPhoneNumber) {
+        this.value = ciValue;
+        this.generatedAt = LocalDateTime.now();
+        this.phoneNumber = encryptedPhoneNumber;
     }
 
     /**

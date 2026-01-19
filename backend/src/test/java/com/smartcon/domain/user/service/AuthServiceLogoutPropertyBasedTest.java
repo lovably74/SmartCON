@@ -1,6 +1,7 @@
 package com.smartcon.domain.user.service;
 
 import com.smartcon.domain.user.repository.UserRepository;
+import com.smartcon.domain.user.service.AuthServiceImpl;
 import com.smartcon.global.security.JwtTokenService;
 import com.smartcon.global.security.JwtTokenBlacklistService;
 import net.jqwik.api.*;
@@ -54,7 +55,10 @@ class AuthServiceLogoutPropertyBasedTest {
         Mockito.when(mockBusinessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
         Mockito.when(mockBusinessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
         
-        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder, mockBusinessNumberValidator);
+        // AuthenticationAuditService Mock 생성
+        AuthenticationAuditService mockAuditService = Mockito.mock(AuthenticationAuditService.class);
+        
+        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder, mockBusinessNumberValidator, mockAuditService);
     }
 
     @Property(tries = 10)

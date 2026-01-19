@@ -42,7 +42,7 @@ class PersonalInfoManagementPropertyTest {
                 .authProvider(AuthProvider.KAKAO)
                 .loginType(LoginType.SOCIAL)
                 .build();
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
         user.setCiValue(formattedPhone);
         user.initializePersonalInfo();
         user.initializeBankAccount();
@@ -196,7 +196,7 @@ class PersonalInfoManagementPropertyTest {
                 .authProvider(AuthProvider.KAKAO)
                 .loginType(LoginType.SOCIAL)
                 .build();
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
         user.setCiValue(formattedPhone);
         user.initializePersonalInfo();
         user.initializeBankAccount();
@@ -236,7 +236,7 @@ class PersonalInfoManagementPropertyTest {
                 .authProvider(AuthProvider.KAKAO)
                 .loginType(LoginType.SOCIAL)
                 .build();
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
         user.setCiValue(formattedPhone);
         user.initializePersonalInfo();
         user.initializeBankAccount();

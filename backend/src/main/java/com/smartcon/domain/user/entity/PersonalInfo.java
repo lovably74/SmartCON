@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.util.DigestUtils;
 
 import java.time.LocalDate;
 
@@ -52,11 +51,13 @@ public class PersonalInfo {
 
     /**
      * 주민번호 설정 (암호화하여 저장)
+     * 주의: 이 메서드는 EncryptionService를 통해 호출되어야 합니다
      * @param ssn 주민번호
+     * @param encryptedValue 암호화된 주민번호 (EncryptionService에서 생성)
      */
-    public void setSsn(String ssn) {
+    public void setSsn(String ssn, String encryptedValue) {
         if (ssn != null && !ssn.trim().isEmpty()) {
-            this.encryptedSsn = encryptSensitiveData(ssn);
+            this.encryptedSsn = encryptedValue;
             // 생년월일 자동 추출
             if (ssn.length() >= 6) {
                 try {
@@ -90,13 +91,31 @@ public class PersonalInfo {
 
     /**
      * 마스킹된 주민번호 반환
+     * @param decryptedSsn 복호화된 주민번호 (EncryptionService에서 복호화)
      * @return 마스킹된 주민번호 (예: 123456-1******)
+     */
+    public String getMaskedSsn(String decryptedSsn) {
+        if (decryptedSsn == null || decryptedSsn.length() < 8) {
+            return "******-*******";
+        }
+
+        String cleaned = decryptedSsn.replaceAll("[^0-9]", "");
+        if (cleaned.length() == 13) {
+            return cleaned.substring(0, 6) + "-" + cleaned.charAt(6) + "******";
+        }
+
+        return "******-*******";
+    }
+    
+    /**
+     * 마스킹된 주민번호 반환 (암호화된 값만 있을 때)
+     * @return 마스킹된 주민번호 (예: ******-*******)
      */
     public String getMaskedSsn() {
         if (encryptedSsn == null || encryptedSsn.trim().isEmpty()) {
             return null;
         }
-        // 실제로는 복호화 후 마스킹해야 하지만, 개발용으로 패턴만 반환
+        // 복호화 없이 기본 마스킹 패턴 반환
         return "******-*******";
     }
 
@@ -170,17 +189,6 @@ public class PersonalInfo {
         return realName != null && !realName.trim().isEmpty() &&
                encryptedSsn != null && !encryptedSsn.trim().isEmpty() &&
                emergencyContact != null && !emergencyContact.trim().isEmpty();
-    }
-
-    /**
-     * 민감한 데이터 암호화
-     * @param data 원본 데이터
-     * @return 암호화된 데이터
-     */
-    private String encryptSensitiveData(String data) {
-        // 개발용 간단한 암호화 (실제 운영에서는 AES-256 사용)
-        String salt = "SMARTCON_PERSONAL_INFO_SALT";
-        return DigestUtils.md5DigestAsHex((salt + data).getBytes());
     }
 
     /**

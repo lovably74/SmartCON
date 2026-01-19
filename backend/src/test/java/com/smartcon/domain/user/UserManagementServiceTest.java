@@ -69,7 +69,7 @@ class UserManagementServiceTest {
         assertThat(user.getLoginType()).isEqualTo(LoginType.SOCIAL);
         assertThat(user.isPhoneVerified()).isTrue();
         assertThat(user.isActive()).isTrue();
-        assertThat(user.getRoles()).contains(User.Role.ROLE_WORKER);
+        assertThat(user.getRoles()).contains(Role.ROLE_WORKER);
         
         // 데이터베이스에 저장되었는지 확인
         Optional<User> savedUser = userRepository.findByCiValue(ciValue);
@@ -94,7 +94,7 @@ class UserManagementServiceTest {
                 .build();
         existingUser.setCiValueDirect(ciValue);
         existingUser.setTenantId(1L); // 테스트용 테넌트 ID 설정
-        existingUser.addRole(User.Role.ROLE_WORKER);
+        existingUser.addRole(Role.ROLE_WORKER);
         userRepository.save(existingUser);
 
         // When: 동일한 CI값으로 다른 소셜 제공자로 로그인 시도

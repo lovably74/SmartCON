@@ -4,6 +4,7 @@ import com.smartcon.domain.attendance.entity.AttendanceRecord;
 import com.smartcon.domain.project.entity.FaceRecognitionDevice;
 import com.smartcon.domain.project.entity.Project;
 import com.smartcon.domain.project.entity.ProjectManager;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,16 +39,16 @@ class ProjectStructureTest {
         user.setCiValueDirect("CI_TEST_12345");
 
         // When: 각 역할 추가
-        user.addRole(User.Role.ROLE_SUPER);
-        user.addRole(User.Role.ROLE_HQ);
-        user.addRole(User.Role.ROLE_SITE);
+        user.addRole(Role.ROLE_SUPER);
+        user.addRole(Role.ROLE_HQ);
+        user.addRole(Role.ROLE_SITE);
 
         // Then: 역할 시스템이 정상 작동하는지 검증
-        assertThat(user.hasRole(User.Role.ROLE_SUPER)).isTrue();
-        assertThat(user.hasRole(User.Role.ROLE_HQ)).isTrue();
-        assertThat(user.hasRole(User.Role.ROLE_SITE)).isTrue();
-        assertThat(user.hasRole(User.Role.ROLE_TEAM)).isFalse();
-        assertThat(user.hasRole(User.Role.ROLE_WORKER)).isFalse();
+        assertThat(user.hasRole(Role.ROLE_SUPER)).isTrue();
+        assertThat(user.hasRole(Role.ROLE_HQ)).isTrue();
+        assertThat(user.hasRole(Role.ROLE_SITE)).isTrue();
+        assertThat(user.hasRole(Role.ROLE_TEAM)).isFalse();
+        assertThat(user.hasRole(Role.ROLE_WORKER)).isFalse();
         
         assertThat(user.isAdmin()).isTrue();
         assertThat(user.isPersonalUser()).isFalse();
@@ -101,7 +102,7 @@ class ProjectStructureTest {
                 .phoneNumber("010-9876-5432")
                 .build();
         worker.setCiValueDirect("CI_WORKER_12345");
-        worker.addRole(User.Role.ROLE_WORKER);
+        worker.addRole(Role.ROLE_WORKER);
 
         Project project = Project.builder()
                 .name("테스트 현장")
@@ -158,7 +159,7 @@ class ProjectStructureTest {
                 .email("site@example.com")
                 .businessNumber("123-45-67890")
                 .build();
-        siteManager.addRole(User.Role.ROLE_SITE);
+        siteManager.addRole(Role.ROLE_SITE);
 
         // When: 프로젝트 관리자 매핑
         ProjectManager projectManager = ProjectManager.builder()
@@ -215,11 +216,11 @@ class ProjectStructureTest {
         // Given: 각 역할의 표시명과 권한 레벨 검증
         
         // Then: 역할별 표시명 검증
-        assertThat(User.Role.ROLE_SUPER.getDisplayName()).isEqualTo("슈퍼관리자");
-        assertThat(User.Role.ROLE_HQ.getDisplayName()).isEqualTo("본사관리자");
-        assertThat(User.Role.ROLE_SITE.getDisplayName()).isEqualTo("현장관리자");
-        assertThat(User.Role.ROLE_TEAM.getDisplayName()).isEqualTo("노무팀장");
-        assertThat(User.Role.ROLE_WORKER.getDisplayName()).isEqualTo("일반노무자");
+        assertThat(Role.ROLE_SUPER.getDisplayName()).isEqualTo("슈퍼관리자");
+        assertThat(Role.ROLE_HQ.getDisplayName()).isEqualTo("본사관리자");
+        assertThat(Role.ROLE_SITE.getDisplayName()).isEqualTo("현장관리자");
+        assertThat(Role.ROLE_TEAM.getDisplayName()).isEqualTo("노무팀장");
+        assertThat(Role.ROLE_WORKER.getDisplayName()).isEqualTo("일반노무자");
 
         // 프로젝트 상태 표시명 검증
         assertThat(Project.ProjectStatus.ACTIVE.getDisplayName()).isEqualTo("진행중");

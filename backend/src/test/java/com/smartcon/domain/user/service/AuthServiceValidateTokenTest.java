@@ -35,6 +35,9 @@ class AuthServiceValidateTokenTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private AuthenticationAuditService auditService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -44,7 +47,7 @@ class AuthServiceValidateTokenTest {
         Mockito.when(mockBusinessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
         Mockito.when(mockBusinessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
         
-        authService = new AuthServiceImpl(userRepository, jwtTokenService, blacklistService, passwordEncoder, mockBusinessNumberValidator);
+        authService = new AuthServiceImpl(userRepository, jwtTokenService, blacklistService, passwordEncoder, mockBusinessNumberValidator, auditService);
     }
 
     @Test

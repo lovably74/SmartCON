@@ -1,8 +1,10 @@
 package com.smartcon.domain.user.service;
 
 import com.smartcon.domain.user.dto.LoginResponse;
+import com.smartcon.domain.user.entity.Role;
 import com.smartcon.domain.user.entity.User;
 import com.smartcon.domain.user.repository.UserRepository;
+import com.smartcon.domain.user.service.AuthServiceImpl;
 import com.smartcon.global.security.JwtTokenService;
 import com.smartcon.global.security.JwtTokenBlacklistService;
 import net.jqwik.api.*;
@@ -58,7 +60,10 @@ class AuthServiceDevTokenPropertyBasedTest {
         Mockito.when(mockBusinessNumberValidator.validate(Mockito.anyString())).thenReturn(true);
         Mockito.when(mockBusinessNumberValidator.normalize(Mockito.anyString())).thenAnswer(i -> i.getArgument(0));
         
-        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder, mockBusinessNumberValidator);
+        // AuthenticationAuditService Mock 생성
+        AuthenticationAuditService mockAuditService = Mockito.mock(AuthenticationAuditService.class);
+        
+        authService = new AuthServiceImpl(userRepository, jwtTokenService, mockBlacklistService, passwordEncoder, mockBusinessNumberValidator, mockAuditService);
     }
 
     @Property(tries = 10)
@@ -177,7 +182,7 @@ class AuthServiceDevTokenPropertyBasedTest {
     private User createMockUser(Long userId, String role, Long tenantId) {
         User user = new User();
         user.setId(userId);
-        user.addRole(User.Role.valueOf(User.Role.class, "ROLE_" + role));
+        user.addRole(Role.valueOf(Role.class, "ROLE_" + role));
         user.setTenantId(tenantId);
         user.setName("testuser" + userId);
         user.setEmail("test" + userId + "@example.com");

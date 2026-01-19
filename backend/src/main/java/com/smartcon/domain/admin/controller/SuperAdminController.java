@@ -6,9 +6,15 @@ import com.smartcon.domain.admin.dto.DashboardStatsDto;
 import com.smartcon.domain.admin.dto.SubscriptionExportDto;
 import com.smartcon.domain.admin.dto.TenantSummaryDto;
 import com.smartcon.domain.admin.service.SuperAdminService;
+import com.smartcon.domain.subscription.dto.SubscriptionApprovalDto;
+import com.smartcon.domain.subscription.dto.SubscriptionDto;
 import com.smartcon.domain.subscription.entity.SubscriptionStatus;
+import com.smartcon.domain.subscription.service.SubscriptionApprovalService;
 import com.smartcon.domain.tenant.entity.Tenant;
 import com.smartcon.global.common.ApiResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,6 +40,7 @@ import java.util.List;
 public class SuperAdminController {
 
     private final SuperAdminService superAdminService;
+    private final SubscriptionApprovalService subscriptionApprovalService;
 
     /**
      * 대시보드 통계 정보 조회
@@ -235,6 +242,181 @@ public class SuperAdminController {
         } catch (Exception e) {
             log.error("구독 데이터 내보내기 중 오류 발생", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // =============================================================================
+    // 구독 승인 관리 API
+    // =============================================================================
+
+    /**
+     * 승인 대기 중인 구독 목록 조회
+     */
+    @GetMapping("/subscriptions/pending")
+    public ApiResponse<Page<SubscriptionDto>> getPendingApprovals(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        log.info("승인 대기 구독 목록 조회 요청 - 페이지: {}/{}", page, size);
+        
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
+            Page<SubscriptionDto> pendingApprovals = subscriptionApprovalService.getPendingApprovals(pageable);
+            return ApiResponse.success(pendingApprovals);
+        } catch (Exception e) {
+            log.error("승인 대기 구독 목록 조회 중 오류 발생", e);
+            return ApiResponse.error("승인 대기 구독 목록을 조회할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 승인
+     */
+    @PostMapping("/subscriptions/{subscriptionId}/approve")
+    public ApiResponse<SubscriptionDto> approveSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody @Valid ApprovalRequest request) {
+        
+        log.info("구독 승인 요청 - 구독 ID: {}, 사유: {}", subscriptionId, request.getReason());
+        
+        try {
+            SubscriptionDto approvedSubscription = subscriptionApprovalService.approveSubscription(
+                    subscriptionId, request.getReason());
+            return ApiResponse.success(approvedSubscription);
+        } catch (IllegalArgumentException e) {
+            log.warn("구독 승인 실패 - 잘못된 요청: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("구독 승인 중 오류 발생", e);
+            return ApiResponse.error("구독을 승인할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 거부
+     */
+    @PostMapping("/subscriptions/{subscriptionId}/reject")
+    public ApiResponse<SubscriptionDto> rejectSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody @Valid ApprovalRequest request) {
+        
+        log.info("구독 거부 요청 - 구독 ID: {}, 사유: {}", subscriptionId, request.getReason());
+        
+        try {
+            SubscriptionDto rejectedSubscription = subscriptionApprovalService.rejectSubscription(
+                    subscriptionId, request.getReason());
+            return ApiResponse.success(rejectedSubscription);
+        } catch (IllegalArgumentException e) {
+            log.warn("구독 거부 실패 - 잘못된 요청: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("구독 거부 중 오류 발생", e);
+            return ApiResponse.error("구독을 거부할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 중지
+     */
+    @PostMapping("/subscriptions/{subscriptionId}/suspend")
+    public ApiResponse<SubscriptionDto> suspendSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody @Valid ApprovalRequest request) {
+        
+        log.info("구독 중지 요청 - 구독 ID: {}, 사유: {}", subscriptionId, request.getReason());
+        
+        try {
+            SubscriptionDto suspendedSubscription = subscriptionApprovalService.suspendSubscription(
+                    subscriptionId, request.getReason());
+            return ApiResponse.success(suspendedSubscription);
+        } catch (IllegalArgumentException e) {
+            log.warn("구독 중지 실패 - 잘못된 요청: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("구독 중지 중 오류 발생", e);
+            return ApiResponse.error("구독을 중지할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 종료
+     */
+    @PostMapping("/subscriptions/{subscriptionId}/terminate")
+    public ApiResponse<SubscriptionDto> terminateSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody @Valid ApprovalRequest request) {
+        
+        log.info("구독 종료 요청 - 구독 ID: {}, 사유: {}", subscriptionId, request.getReason());
+        
+        try {
+            SubscriptionDto terminatedSubscription = subscriptionApprovalService.terminateSubscription(
+                    subscriptionId, request.getReason());
+            return ApiResponse.success(terminatedSubscription);
+        } catch (IllegalArgumentException e) {
+            log.warn("구독 종료 실패 - 잘못된 요청: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("구독 종료 중 오류 발생", e);
+            return ApiResponse.error("구독을 종료할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 재활성화
+     */
+    @PostMapping("/subscriptions/{subscriptionId}/reactivate")
+    public ApiResponse<SubscriptionDto> reactivateSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody @Valid ApprovalRequest request) {
+        
+        log.info("구독 재활성화 요청 - 구독 ID: {}, 사유: {}", subscriptionId, request.getReason());
+        
+        try {
+            SubscriptionDto reactivatedSubscription = subscriptionApprovalService.reactivateSubscription(
+                    subscriptionId, request.getReason());
+            return ApiResponse.success(reactivatedSubscription);
+        } catch (IllegalArgumentException e) {
+            log.warn("구독 재활성화 실패 - 잘못된 요청: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("구독 재활성화 중 오류 발생", e);
+            return ApiResponse.error("구독을 재활성화할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 구독 승인 이력 조회
+     */
+    @GetMapping("/subscriptions/{subscriptionId}/history")
+    public ApiResponse<List<SubscriptionApprovalDto>> getApprovalHistory(
+            @PathVariable Long subscriptionId) {
+        
+        log.info("구독 승인 이력 조회 요청 - 구독 ID: {}", subscriptionId);
+        
+        try {
+            List<SubscriptionApprovalDto> approvalHistory = subscriptionApprovalService.getApprovalHistory(subscriptionId);
+            return ApiResponse.success(approvalHistory);
+        } catch (Exception e) {
+            log.error("구독 승인 이력 조회 중 오류 발생", e);
+            return ApiResponse.error("구독 승인 이력을 조회할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 승인/거부/중지/종료/재활성화 요청 DTO
+     */
+    public static class ApprovalRequest {
+        
+        @NotBlank(message = "사유는 필수입니다")
+        @Size(min = 10, max = 500, message = "사유는 10자 이상 500자 이하로 입력해주세요")
+        private String reason;
+        
+        public String getReason() {
+            return reason;
+        }
+        
+        public void setReason(String reason) {
+            this.reason = reason;
         }
     }
 }

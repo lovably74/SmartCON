@@ -87,7 +87,7 @@ class CiValueTest {
                 .loginType(LoginType.SOCIAL)
                 .build();
         user.setCiValue(phoneNumber);
-        user.addRole(User.Role.ROLE_WORKER);
+        user.addRole(Role.ROLE_WORKER);
 
         // Then: 사용자 정보 일관성 검증
         assertThat(user.isCiBasedUser()).isTrue();

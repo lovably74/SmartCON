@@ -189,4 +189,12 @@ public interface SubscriptionApprovalRepository extends JpaRepository<Subscripti
                    "ORDER BY avg_processing_minutes ASC", 
            nativeQuery = true)
     List<Object[]> getApprovalPerformanceAnalysis();
+
+    // ========== 대시보드용 통계 메서드 ==========
+
+    /**
+     * 특정 상태로 변경된 승인 수 조회
+     */
+    @Query("SELECT COUNT(sa) FROM SubscriptionApproval sa WHERE sa.toStatus = :toStatus")
+    long countByToStatus(@Param("toStatus") com.smartcon.domain.subscription.entity.SubscriptionStatus toStatus);
 }

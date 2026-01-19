@@ -24,6 +24,7 @@ import java.util.Optional;
 public class UserManagementServiceImpl implements UserManagementService {
 
     private final UserRepository userRepository;
+    private final UserEncryptionService userEncryptionService;
 
     @Override
     public User findOrCreateUserByCi(String ciValue, SocialAccount.SocialProvider provider) {
@@ -80,7 +81,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
         
         if (request.residentNumber() != null) {
-            user.getPersonalInfo().setSsn(request.residentNumber());
+            userEncryptionService.encryptAndSetSsn(user.getPersonalInfo(), request.residentNumber());
         }
         if (request.address() != null) {
             user.getPersonalInfo().setHomeAddress(request.address());
@@ -102,7 +103,7 @@ public class UserManagementServiceImpl implements UserManagementService {
                 user.getBankAccount().setBankCodeAndName(getBankCodeFromName(request.bankAccount().bankName()));
             }
             if (request.bankAccount().accountNumber() != null) {
-                user.getBankAccount().setAccountNumber(request.bankAccount().accountNumber());
+                userEncryptionService.encryptAndSetAccountNumber(user.getBankAccount(), request.bankAccount().accountNumber());
             }
             if (request.bankAccount().accountHolder() != null) {
                 user.getBankAccount().setAccountHolder(request.bankAccount().accountHolder());
@@ -142,7 +143,7 @@ public class UserManagementServiceImpl implements UserManagementService {
             user.getBusinessInfo().setCompanyName(request.companyName());
         }
         if (request.businessRegistrationNumber() != null) {
-            user.getBusinessInfo().setBusinessNumber(request.businessRegistrationNumber());
+            userEncryptionService.encryptAndSetBusinessNumber(user.getBusinessInfo(), request.businessRegistrationNumber());
         }
         if (request.representativeName() != null) {
             user.getBusinessInfo().setCeoName(request.representativeName());

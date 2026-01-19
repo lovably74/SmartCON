@@ -3,8 +3,6 @@ package com.smartcon.global.security;
 import com.smartcon.domain.user.entity.LoginType;
 import com.smartcon.domain.user.entity.Role;
 import net.jqwik.api.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,14 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * For any user request to access a resource, the system should only allow access 
  * if the user's current role has appropriate permissions for that resource
  */
-@DisplayName("역할 기반 접근 제어 속성 테스트")
 class RoleBasedAccessControlPropertyTest {
 
-    private RoleBasedAccessControl rbac;
-
-    @BeforeEach
-    void setUp() {
-        rbac = new RoleBasedAccessControl();
+    // jqwik은 @BeforeEach를 지원하지 않으므로 각 테스트에서 직접 인스턴스 생성
+    private RoleBasedAccessControl createRbac() {
+        return new RoleBasedAccessControl();
     }
 
     /**
@@ -37,12 +32,13 @@ class RoleBasedAccessControlPropertyTest {
      * 상위 역할(레벨이 낮은)은 하위 역할(레벨이 높은)의 리소스에 접근할 수 있어야 함
      */
     @Property(tries = 100)
-    @DisplayName("상위 역할은 하위 역할의 리소스에 접근할 수 있어야 한다")
+    @Label("상위 역할은 하위 역할의 리소스에 접근할 수 있어야 한다")
     void higherRoleShouldAccessLowerRoleResources(
             @ForAll("roles") Role userRole,
             @ForAll("roles") Role resourceRole) {
 
-        // Given: 사용자 역할 집합
+        // Given: 사용자 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> userRoles = Set.of(userRole);
 
         // When: 리소스 접근 권한 확인
@@ -63,12 +59,13 @@ class RoleBasedAccessControlPropertyTest {
      * 상위 역할은 하위 역할의 리소스를 읽을 수 있어야 함
      */
     @Property(tries = 100)
-    @DisplayName("상위 역할은 하위 역할의 리소스를 읽을 수 있어야 한다")
+    @Label("상위 역할은 하위 역할의 리소스를 읽을 수 있어야 한다")
     void higherRoleShouldReadLowerRoleResources(
             @ForAll("roles") Role userRole,
             @ForAll("roles") Role resourceOwnerRole) {
 
-        // Given: 사용자 역할 집합
+        // Given: 사용자 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> userRoles = Set.of(userRole);
 
         // When: 읽기 권한 확인
@@ -89,12 +86,13 @@ class RoleBasedAccessControlPropertyTest {
      * 상위 역할은 하위 역할의 리소스를 수정할 수 있어야 함
      */
     @Property(tries = 100)
-    @DisplayName("상위 역할은 하위 역할의 리소스를 수정할 수 있어야 한다")
+    @Label("상위 역할은 하위 역할의 리소스를 수정할 수 있어야 한다")
     void higherRoleShouldWriteLowerRoleResources(
             @ForAll("roles") Role userRole,
             @ForAll("roles") Role resourceOwnerRole) {
 
-        // Given: 사용자 역할 집합
+        // Given: 사용자 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> userRoles = Set.of(userRole);
 
         // When: 쓰기 권한 확인
@@ -115,12 +113,13 @@ class RoleBasedAccessControlPropertyTest {
      * 상위 역할은 하위 역할의 리소스를 삭제할 수 있어야 함
      */
     @Property(tries = 100)
-    @DisplayName("상위 역할은 하위 역할의 리소스를 삭제할 수 있어야 한다")
+    @Label("상위 역할은 하위 역할의 리소스를 삭제할 수 있어야 한다")
     void higherRoleShouldDeleteLowerRoleResources(
             @ForAll("roles") Role userRole,
             @ForAll("roles") Role resourceOwnerRole) {
 
-        // Given: 사용자 역할 집합
+        // Given: 사용자 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> userRoles = Set.of(userRole);
 
         // When: 삭제 권한 확인
@@ -142,12 +141,13 @@ class RoleBasedAccessControlPropertyTest {
      * 개인사용자 역할(TEAM, WORKER)은 소셜 로그인만 사용 가능
      */
     @Property(tries = 100)
-    @DisplayName("역할별로 허용된 로그인 유형만 사용할 수 있어야 한다")
+    @Label("역할별로 허용된 로그인 유형만 사용할 수 있어야 한다")
     void roleShouldOnlyUseAllowedLoginType(
             @ForAll("roles") Role role,
             @ForAll("loginTypes") LoginType loginType) {
 
-        // Given: 사용자 역할 집합
+        // Given: 사용자 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> userRoles = Set.of(role);
 
         // When: 로그인 유형 사용 가능 여부 확인
@@ -183,9 +183,12 @@ class RoleBasedAccessControlPropertyTest {
      * ROLE_SUPER가 포함된 경우에만 슈퍼관리자로 인식되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("ROLE_SUPER가 포함된 경우에만 슈퍼관리자로 인식되어야 한다")
+    @Label("ROLE_SUPER가 포함된 경우에만 슈퍼관리자로 인식되어야 한다")
     void onlySuperRoleShouldBeRecognizedAsSuperAdmin(
             @ForAll("roleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 슈퍼관리자 권한 확인
         boolean isSuperAdmin = rbac.isSuperAdmin(userRoles);
@@ -201,9 +204,12 @@ class RoleBasedAccessControlPropertyTest {
      * ROLE_SUPER 또는 ROLE_HQ가 포함된 경우 본사관리자 이상으로 인식되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("ROLE_SUPER 또는 ROLE_HQ가 포함된 경우 본사관리자 이상으로 인식되어야 한다")
+    @Label("ROLE_SUPER 또는 ROLE_HQ가 포함된 경우 본사관리자 이상으로 인식되어야 한다")
     void hqOrAboveRolesShouldBeRecognized(
             @ForAll("roleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 본사관리자 이상 권한 확인
         boolean isHqOrAbove = rbac.isHqOrAbove(userRoles);
@@ -220,9 +226,12 @@ class RoleBasedAccessControlPropertyTest {
      * ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 현장관리자 이상으로 인식되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 현장관리자 이상으로 인식되어야 한다")
+    @Label("ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 현장관리자 이상으로 인식되어야 한다")
     void siteManagerOrAboveRolesShouldBeRecognized(
             @ForAll("roleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 현장관리자 이상 권한 확인
         boolean isSiteManagerOrAbove = rbac.isSiteManagerOrAbove(userRoles);
@@ -241,9 +250,12 @@ class RoleBasedAccessControlPropertyTest {
      * ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 관리자로 인식되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 관리자로 인식되어야 한다")
+    @Label("ROLE_SUPER, ROLE_HQ, ROLE_SITE 중 하나가 포함된 경우 관리자로 인식되어야 한다")
     void adminRolesShouldBeRecognized(
             @ForAll("roleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 관리자 역할 확인
         boolean isAdmin = rbac.isAdmin(userRoles);
@@ -260,9 +272,12 @@ class RoleBasedAccessControlPropertyTest {
      * ROLE_TEAM 또는 ROLE_WORKER가 포함된 경우 개인사용자로 인식되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("ROLE_TEAM 또는 ROLE_WORKER가 포함된 경우 개인사용자로 인식되어야 한다")
+    @Label("ROLE_TEAM 또는 ROLE_WORKER가 포함된 경우 개인사용자로 인식되어야 한다")
     void personalUserRolesShouldBeRecognized(
             @ForAll("roleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 개인사용자 역할 확인
         boolean isPersonalUser = rbac.isPersonalUser(userRoles);
@@ -279,9 +294,12 @@ class RoleBasedAccessControlPropertyTest {
      * 레벨이 가장 낮은(권한이 가장 높은) 역할이 반환되어야 함
      */
     @Property(tries = 100)
-    @DisplayName("레벨이 가장 낮은 역할이 최고 권한 역할로 반환되어야 한다")
+    @Label("레벨이 가장 낮은 역할이 최고 권한 역할로 반환되어야 한다")
     void highestRoleShouldBeLowestLevel(
             @ForAll("nonEmptyRoleSets") Set<Role> userRoles) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 최고 권한 역할 조회
         Role highestRole = rbac.getHighestRole(userRoles);
@@ -305,10 +323,13 @@ class RoleBasedAccessControlPropertyTest {
      * 역할 중 하나라도 권한이 있으면 접근 가능해야 함
      */
     @Property(tries = 100)
-    @DisplayName("다중 역할 중 하나라도 권한이 있으면 접근 가능해야 한다")
+    @Label("다중 역할 중 하나라도 권한이 있으면 접근 가능해야 한다")
     void multipleRolesShouldGrantAccessIfAnyHasPermission(
             @ForAll("nonEmptyRoleSets") Set<Role> userRoles,
             @ForAll("roles") Role targetRole) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 역할 접근 권한 확인
         boolean canAccess = rbac.canAccessRole(userRoles, targetRole);
@@ -325,11 +346,12 @@ class RoleBasedAccessControlPropertyTest {
      * 모든 권한 확인이 false를 반환해야 함
      */
     @Property(tries = 50)
-    @DisplayName("빈 역할 집합은 모든 권한 확인에서 false를 반환해야 한다")
+    @Label("빈 역할 집합은 모든 권한 확인에서 false를 반환해야 한다")
     void emptyRoleSetShouldDenyAllAccess(
             @ForAll("roles") Role targetRole) {
 
-        // Given: 빈 역할 집합
+        // Given: 빈 역할 집합 및 RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
         Set<Role> emptyRoles = new HashSet<>();
 
         // When & Then: 모든 권한 확인이 false
@@ -364,10 +386,13 @@ class RoleBasedAccessControlPropertyTest {
      * 슈퍼관리자와 본사관리자는 모든 현장에 접근 가능해야 함
      */
     @Property(tries = 100)
-    @DisplayName("슈퍼관리자와 본사관리자는 모든 현장에 접근 가능해야 한다")
+    @Label("슈퍼관리자와 본사관리자는 모든 현장에 접근 가능해야 한다")
     void superAndHqAdminShouldAccessAllSites(
             @ForAll("roleSets") Set<Role> userRoles,
             @ForAll("siteIds") Long siteId) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 현장 접근 권한 확인
         boolean canAccessSite = rbac.canAccessSite(userRoles, siteId);
@@ -385,10 +410,13 @@ class RoleBasedAccessControlPropertyTest {
      * 현장관리자 이상은 모든 팀에 접근 가능해야 함
      */
     @Property(tries = 100)
-    @DisplayName("현장관리자 이상은 모든 팀에 접근 가능해야 한다")
+    @Label("현장관리자 이상은 모든 팀에 접근 가능해야 한다")
     void siteManagerOrAboveShouldAccessAllTeams(
             @ForAll("roleSets") Set<Role> userRoles,
             @ForAll("teamIds") Long teamId) {
+
+        // Given: RBAC 인스턴스
+        RoleBasedAccessControl rbac = createRbac();
 
         // When: 팀 접근 권한 확인
         boolean canAccessTeam = rbac.canAccessTeam(userRoles, teamId);

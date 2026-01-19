@@ -105,4 +105,142 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     Optional<AttendanceRecord> findByTenantIdAndWorkerIdAndWorkDate(@Param("tenantId") String tenantId,
                                                                    @Param("workerId") Long workerId,
                                                                    @Param("workDate") LocalDate workDate);
+
+    // ========== 대시보드용 통계 메서드 ==========
+
+    /**
+     * 특정 프로젝트의 고유 노무자 수 조회
+     */
+    @Query("SELECT COUNT(DISTINCT ar.worker.id) FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId")
+    long countDistinctWorkersByProjectId(@Param("projectId") Long projectId);
+
+    /**
+     * 특정 프로젝트의 특정 날짜 출역자 수 조회
+     */
+    @Query("SELECT COUNT(ar) FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId AND ar.workDate = :workDate")
+    long countByProjectIdAndWorkDate(@Param("projectId") Long projectId, @Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 프로젝트의 기간별 출역 기록 수 조회
+     */
+    @Query("SELECT COUNT(ar) FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId AND ar.workDate BETWEEN :startDate AND :endDate")
+    long countByProjectIdAndWorkDateBetween(@Param("projectId") Long projectId,
+                                           @Param("startDate") LocalDate startDate,
+                                           @Param("endDate") LocalDate endDate);
+
+    /**
+     * 테넌트별 특정 날짜 이후 고유 노무자 수 조회
+     */
+    @Query("SELECT COUNT(DISTINCT ar.worker.id) FROM AttendanceRecord ar " +
+           "WHERE ar.tenantId = :tenantId AND ar.workDate > :workDate")
+    long countDistinctWorkersByTenantIdAndWorkDateAfter(@Param("tenantId") String tenantId,
+                                                        @Param("workDate") LocalDate workDate);
+
+    /**
+     * 테넌트별 기간별 총 급여 합계 조회
+     */
+    @Query("SELECT COALESCE(SUM(ar.totalWage), 0) FROM AttendanceRecord ar " +
+           "WHERE ar.tenantId = :tenantId AND ar.workDate BETWEEN :startDate AND :endDate")
+    java.math.BigDecimal sumTotalWageByTenantIdAndWorkDateBetween(@Param("tenantId") String tenantId,
+                                                                   @Param("startDate") LocalDate startDate,
+                                                                   @Param("endDate") LocalDate endDate);
+
+    /**
+     * 테넌트별 특정 날짜 출역자 수 조회
+     */
+    @Query("SELECT COUNT(ar) FROM AttendanceRecord ar " +
+           "WHERE ar.tenantId = :tenantId AND ar.workDate = :workDate")
+    long countByTenantIdAndWorkDate(@Param("tenantId") String tenantId, @Param("workDate") LocalDate workDate);
+
+    /**
+     * 테넌트별 특정 날짜 총 근무시간 합계 조회
+     */
+    @Query("SELECT COALESCE(SUM(ar.workHours), 0) FROM AttendanceRecord ar " +
+           "WHERE ar.tenantId = :tenantId AND ar.workDate = :workDate")
+    java.math.BigDecimal sumWorkHoursByTenantIdAndWorkDate(@Param("tenantId") String tenantId,
+                                                           @Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 날짜 전체 출역자 수 조회 (슈퍼관리자용)
+     */
+    @Query("SELECT COUNT(ar) FROM AttendanceRecord ar WHERE ar.workDate = :workDate")
+    long countByWorkDate(@Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 날짜 전체 총 근무시간 합계 조회 (슈퍼관리자용)
+     */
+    @Query("SELECT COALESCE(SUM(ar.workHours), 0) FROM AttendanceRecord ar WHERE ar.workDate = :workDate")
+    java.math.BigDecimal sumWorkHoursByWorkDate(@Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 프로젝트의 특정 날짜 총 근무시간 합계 조회
+     */
+    @Query("SELECT COALESCE(SUM(ar.workHours), 0) FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId AND ar.workDate = :workDate")
+    java.math.BigDecimal sumWorkHoursByProjectIdAndWorkDate(@Param("projectId") Long projectId,
+                                                            @Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 노무자의 특정 프로젝트 기간별 고유 출역일수 조회
+     */
+    @Query("SELECT COUNT(DISTINCT ar.workDate) FROM AttendanceRecord ar " +
+           "WHERE ar.worker.id = :workerId AND ar.project.id = :projectId " +
+           "AND ar.workDate BETWEEN :startDate AND :endDate")
+    int countDistinctWorkDatesByWorkerIdAndProjectIdAndWorkDateBetween(@Param("workerId") Long workerId,
+                                                                       @Param("projectId") Long projectId,
+                                                                       @Param("startDate") LocalDate startDate,
+                                                                       @Param("endDate") LocalDate endDate);
+
+    /**
+     * 특정 노무자의 특정 프로젝트 기간별 총 근무시간 합계 조회
+     */
+    @Query("SELECT COALESCE(SUM(ar.workHours), 0) FROM AttendanceRecord ar " +
+           "WHERE ar.worker.id = :workerId AND ar.project.id = :projectId " +
+           "AND ar.workDate BETWEEN :startDate AND :endDate")
+    java.math.BigDecimal sumWorkHoursByWorkerIdAndProjectIdAndWorkDateBetween(@Param("workerId") Long workerId,
+                                                                              @Param("projectId") Long projectId,
+                                                                              @Param("startDate") LocalDate startDate,
+                                                                              @Param("endDate") LocalDate endDate);
+
+    /**
+     * 특정 노무자의 특정 프로젝트 기간별 총 급여 합계 조회
+     */
+    @Query("SELECT COALESCE(SUM(ar.totalWage), 0) FROM AttendanceRecord ar " +
+           "WHERE ar.worker.id = :workerId AND ar.project.id = :projectId " +
+           "AND ar.workDate BETWEEN :startDate AND :endDate")
+    java.math.BigDecimal sumTotalWageByWorkerIdAndProjectIdAndWorkDateBetween(@Param("workerId") Long workerId,
+                                                                              @Param("projectId") Long projectId,
+                                                                              @Param("startDate") LocalDate startDate,
+                                                                              @Param("endDate") LocalDate endDate);
+
+    /**
+     * 특정 노무자의 특정 프로젝트 기간별 출역 기록 조회 (최신순)
+     */
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+           "WHERE ar.worker.id = :workerId AND ar.project.id = :projectId " +
+           "AND ar.workDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY ar.workDate DESC")
+    List<AttendanceRecord> findByWorkerIdAndProjectIdAndWorkDateBetweenOrderByWorkDateDesc(@Param("workerId") Long workerId,
+                                                                                           @Param("projectId") Long projectId,
+                                                                                           @Param("startDate") LocalDate startDate,
+                                                                                           @Param("endDate") LocalDate endDate);
+
+    /**
+     * 특정 프로젝트의 특정 날짜 출역 기록 조회
+     */
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId AND ar.workDate = :workDate")
+    List<AttendanceRecord> findByProjectIdAndWorkDate(@Param("projectId") Long projectId,
+                                                      @Param("workDate") LocalDate workDate);
+
+    /**
+     * 특정 프로젝트의 특정 공종 고유 노무자 수 조회
+     */
+    @Query("SELECT COUNT(DISTINCT ar.worker.id) FROM AttendanceRecord ar " +
+           "WHERE ar.project.id = :projectId AND ar.jobType = :jobType")
+    long countDistinctWorkersByProjectIdAndJobType(@Param("projectId") Long projectId,
+                                                   @Param("jobType") AttendanceRecord.JobType jobType);
 }

@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.util.DigestUtils;
 
 /**
  * 급여 계좌 정보를 위한 임베디드 엔티티
@@ -37,19 +36,21 @@ public class BankAccount {
     @Builder.Default
     private Boolean isSalaryAccount = true; // 급여계좌 여부
 
-    @Column(name = "is_verified")
+    @Column(name = "bank_account_is_verified")
     @Builder.Default
     private Boolean isVerified = false; // 계좌 인증 여부
 
     /**
      * 계좌번호 설정 (암호화하여 저장)
+     * 주의: 이 메서드는 EncryptionService를 통해 호출되어야 합니다
      * @param accountNumber 계좌번호
+     * @param encryptedValue 암호화된 계좌번호 (EncryptionService에서 생성)
      */
-    public void setAccountNumber(String accountNumber) {
+    public void setAccountNumber(String accountNumber, String encryptedValue) {
         if (accountNumber != null && !accountNumber.trim().isEmpty()) {
             // 숫자만 추출
             String cleanNumber = accountNumber.replaceAll("[^0-9]", "");
-            this.encryptedAccountNumber = encryptSensitiveData(cleanNumber);
+            this.encryptedAccountNumber = encryptedValue;
         } else {
             this.encryptedAccountNumber = null;
         }
@@ -57,14 +58,32 @@ public class BankAccount {
 
     /**
      * 마스킹된 계좌번호 반환
+     * @param decryptedAccountNumber 복호화된 계좌번호 (EncryptionService에서 복호화)
      * @return 마스킹된 계좌번호 (예: 123-****-****-78)
+     */
+    public String getMaskedAccountNumber(String decryptedAccountNumber) {
+        if (decryptedAccountNumber == null || decryptedAccountNumber.length() < 8) {
+            return "****-****-****";
+        }
+
+        String cleaned = decryptedAccountNumber.replaceAll("[^0-9]", "");
+        if (cleaned.length() >= 10) {
+            return cleaned.substring(0, 3) + "-****-****-" + cleaned.substring(cleaned.length() - 2);
+        }
+
+        return "****-****-****";
+    }
+    
+    /**
+     * 마스킹된 계좌번호 반환 (암호화된 값만 있을 때)
+     * @return 마스킹된 계좌번호 (예: ****-****-****)
      */
     public String getMaskedAccountNumber() {
         if (encryptedAccountNumber == null || encryptedAccountNumber.trim().isEmpty()) {
             return null;
         }
-        
-        // 실제로는 복호화 후 마스킹해야 하지만, 개발용으로 패턴만 반환
+
+        // 복호화 없이 은행별 기본 마스킹 패턴 반환
         if (bankCode != null) {
             switch (bankCode) {
                 case "004": // KB국민은행
@@ -77,7 +96,7 @@ public class BankAccount {
                     return "****-****-****";
             }
         }
-        
+
         return "****-****-****";
     }
 
@@ -132,17 +151,6 @@ public class BankAccount {
         if (canVerify()) {
             this.isVerified = true;
         }
-    }
-
-    /**
-     * 민감한 데이터 암호화
-     * @param data 원본 데이터
-     * @return 암호화된 데이터
-     */
-    private String encryptSensitiveData(String data) {
-        // 개발용 간단한 암호화 (실제 운영에서는 AES-256 사용)
-        String salt = "SMARTCON_BANK_ACCOUNT_SALT";
-        return DigestUtils.md5DigestAsHex((salt + data).getBytes());
     }
 
     /**
